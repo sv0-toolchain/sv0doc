@@ -1,0 +1,750 @@
+(* ================================================================== *)
+(* sv0 formal grammar                                                 *)
+(* ISO 14977 EBNF notation                                            *)
+(*                                                                    *)
+(* extracted from: sv0 compiler vision and design document             *)
+(* reference: sv0doc/grammar/sv0.ebnf                                 *)
+(* ================================================================== *)
+
+
+(* ================================================================== *)
+(* 1. LEXICAL GRAMMAR                                                 *)
+(* ================================================================== *)
+
+(* --- characters and digits --- *)
+
+letter          = "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h"
+                | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+                | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x"
+                | "y" | "z"
+                | "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H"
+                | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P"
+                | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X"
+                | "Y" | "Z" ;
+
+digit           = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7"
+                | "8" | "9" ;
+
+hex_digit       = digit
+                | "a" | "b" | "c" | "d" | "e" | "f"
+                | "A" | "B" | "C" | "D" | "E" | "F" ;
+
+oct_digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+
+bin_digit       = "0" | "1" ;
+
+(* --- identifiers --- *)
+
+ident_start     = letter | "_" ;
+ident_continue  = letter | digit | "_" ;
+identifier      = ident_start , { ident_continue } ;
+
+(* --- keywords --- *)
+(* identifiers matching a keyword are lexed as that keyword token *)
+
+keyword         = "let" | "mut" | "const" | "static"
+                | "fn" | "return"
+                | "if" | "else" | "match"
+                | "while" | "for" | "in"
+                | "struct" | "enum" | "trait" | "impl"
+                | "type" | "newtype" | "where"
+                | "pub"
+                | "module" | "use"
+                | "unsafe" | "move"
+                | "as"
+                | "self" | "Self"
+                | "requires" | "ensures" | "loop_invariant"
+                | "result" | "old"
+                | "forall" | "exists"
+                | "borrows" | "no_alias"
+                | "assert" | "break" | "continue" | "loop"
+                | "project"
+                | "true" | "false"
+                | "Some" | "None"
+                | "Ok" | "Err" ;
+
+(* --- numeric literals --- *)
+
+underscore_sep  = "_" ;
+
+decimal_digits  = digit , { digit | underscore_sep } ;
+hex_digits      = hex_digit , { hex_digit | underscore_sep } ;
+oct_digits      = oct_digit , { oct_digit | underscore_sep } ;
+bin_digits      = bin_digit , { bin_digit | underscore_sep } ;
+
+decimal_literal = decimal_digits ;
+hex_literal     = "0x" , hex_digits ;
+octal_literal   = "0o" , oct_digits ;
+binary_literal  = "0b" , bin_digits ;
+
+integer_suffix  = "i8" | "i16" | "i32" | "i64" | "i128"
+                | "u8" | "u16" | "u32" | "u64" | "u128"
+                | "usize" | "isize" ;
+
+integer_literal = ( decimal_literal | hex_literal
+                  | octal_literal | binary_literal )
+                , [ integer_suffix ] ;
+
+float_suffix    = "f32" | "f64" ;
+float_literal   = decimal_digits , "." , decimal_digits , [ float_suffix ] ;
+
+(* --- string and character literals --- *)
+
+escape_sequence = "\\" , ( "n" | "r" | "t" | "\\" | '"' | "'"
+                         | "0"
+                         | "x" , hex_digit , hex_digit
+                         | "u" , "{" , hex_digits , "}" ) ;
+
+string_char     = ? any unicode character except '"' and '\\' ?
+                | escape_sequence ;
+string_literal  = '"' , { string_char } , '"' ;
+
+char_char       = ? any unicode character except "'" and '\\' ?
+                | escape_sequence ;
+char_literal    = "'" , char_char , "'" ;
+
+(* --- boolean literals --- *)
+
+bool_literal    = "true" | "false" ;
+
+(* --- comments --- *)
+
+line_comment    = "//" , { ? any character except newline ? } ;
+doc_comment     = "///" , { ? any character except newline ? } ;
+
+(* --- whitespace (skipped by lexer) --- *)
+
+whitespace      = " " | "\t" | "\n" | "\r" ;
+
+
+(* ================================================================== *)
+(* 2. PATHS                                                           *)
+(* ================================================================== *)
+
+simple_path     = identifier , { "::" , identifier } ;
+
+path_expr       = [ simple_path , "::" ] , identifier ;
+
+type_path       = simple_path , [ "::" , "<" , type_arg_list , ">" ] ;
+
+type_arg_list   = type_or_const_arg , { "," , type_or_const_arg } ;
+
+type_or_const_arg = type_expr
+                  | integer_literal
+                  | bool_literal
+                  | "{" , expr , "}" ;              (* const expression block *)
+
+
+(* ================================================================== *)
+(* 3. TOP-LEVEL DECLARATIONS                                          *)
+(* ================================================================== *)
+
+source_file     = [ module_decl ] , { use_decl | item } ;
+
+(* --- module declaration --- *)
+
+module_decl     = "module" , simple_path , ";" ;
+
+(* --- use/import declarations --- *)
+
+use_decl        = [ "pub" ] , "use" , use_path , ";" ;
+
+use_path        = simple_path , [ "::" , use_tail ] ;
+
+use_tail        = identifier
+                | "{" , use_list , "}"
+                | "*" ;
+
+use_list        = identifier , { "," , identifier } , [ "," ] ;
+
+(* --- items --- *)
+
+item            = [ visibility ] , item_body ;
+
+item_body       = fn_def
+                | struct_def
+                | enum_def
+                | trait_def
+                | impl_def
+                | type_alias
+                | newtype_def
+                | const_def
+                | static_def ;
+
+(* --- visibility --- *)
+
+visibility      = "pub" , [ "(" , "project" , ")" ] ;
+
+
+(* ================================================================== *)
+(* 4. FUNCTION DECLARATIONS                                           *)
+(* ================================================================== *)
+
+fn_def          = [ "unsafe" ] , "fn" , identifier
+                , [ generic_params ]
+                , "(" , [ param_list ] , ")"
+                , [ "->" , type_expr ]
+                , { contract_clause }
+                , block_expr ;
+
+generic_params  = "<" , generic_param , { "," , generic_param } , ">" ;
+
+generic_param   = identifier , [ ":" , trait_bound_list ] ;
+
+trait_bound_list = type_path , { "+" , type_path } ;
+
+param_list      = param , { "," , param } , [ "," ] ;
+
+param           = [ "mut" ] , ( self_param | typed_param ) ;
+
+self_param      = "self" , ":" , self_type ;
+
+self_type       = "&" , "Self"
+                | "&" , "mut" , "Self"
+                | "Self" ;
+
+typed_param     = identifier , ":" , type_expr ;
+
+
+(* ================================================================== *)
+(* 5. CONTRACT CLAUSES                                                *)
+(* ================================================================== *)
+
+(* contracts appear between the function signature and the body *)
+
+contract_clause = requires_clause
+                | ensures_clause
+                | borrows_clause ;
+
+requires_clause = "requires" , "(" , expr , ")" ;
+
+ensures_clause  = "ensures" , "(" , expr , ")" ;
+
+borrows_clause  = "borrows" , "(" , ident_list , ")" ;
+
+ident_list      = identifier , { "," , identifier } ;
+
+(* loop_invariant appears between the while condition and the loop body *)
+
+loop_invariant  = "loop_invariant" , "(" , expr , ")" ;
+
+
+(* ================================================================== *)
+(* 6. TYPE EXPRESSIONS                                                *)
+(* ================================================================== *)
+
+type_expr       = primitive_type
+                | array_type
+                | slice_type
+                | tuple_type
+                | reference_type
+                | raw_pointer_type
+                | fn_pointer_type
+                | fn_trait_type
+                | named_type
+                | unit_type
+                | "Self" ;
+
+primitive_type  = "i8" | "i16" | "i32" | "i64" | "i128"
+                | "u8" | "u16" | "u32" | "u64" | "u128"
+                | "usize" | "isize"
+                | "f32" | "f64"
+                | "bool"
+                | "char" | "byte"
+                | "string" ;
+
+array_type      = "[" , type_expr , ";" , expr , "]" ;
+
+slice_type      = "&" , "[" , type_expr , "]" ;
+
+tuple_type      = "(" , type_expr , "," , [ type_expr , { "," , type_expr } ] , [ "," ] , ")" ;
+
+unit_type       = "(" , ")" ;
+
+reference_type  = "&" , [ "mut" ] , type_expr ;
+
+raw_pointer_type = "*" , ( "const" | "mut" ) , type_expr ;
+
+fn_pointer_type = "fn" , "(" , [ type_list ] , ")" , [ "->" , type_expr ] ;
+
+fn_trait_type   = ( "Fn" | "FnMut" | "FnOnce" )
+                , "(" , [ type_list ] , ")" , [ "->" , type_expr ] ;
+
+type_list       = type_expr , { "," , type_expr } , [ "," ] ;
+
+named_type      = type_path ;
+
+(* refined type (in type alias context) *)
+refinement      = "where" , "self" , comparison_op , expr ;
+
+
+(* ================================================================== *)
+(* 7. STRUCT, ENUM, TRAIT, IMPL DEFINITIONS                           *)
+(* ================================================================== *)
+
+(* --- struct --- *)
+
+struct_def      = "struct" , identifier , [ generic_params ]
+                , [ struct_borrows ]
+                , "{" , [ field_list ] , "}" ;
+
+struct_borrows  = "borrows" , "(" , ident_list , ")" ;
+
+field_list      = field_def , { "," , field_def } , [ "," ] ;
+
+field_def       = [ visibility ] , identifier , ":" , type_expr ;
+
+(* --- enum --- *)
+
+enum_def        = "enum" , identifier , [ generic_params ]
+                , "{" , [ variant_list ] , "}" ;
+
+variant_list    = variant , { "," , variant } , [ "," ] ;
+
+variant         = identifier , [ variant_payload ] ;
+
+variant_payload = "(" , type_list , ")"
+                | "{" , field_list , "}" ;
+
+(* --- trait --- *)
+
+trait_def       = "trait" , identifier , [ generic_params ]
+                , "{" , { trait_item } , "}" ;
+
+trait_item      = [ visibility ] , trait_fn
+                | type_alias_decl ;
+
+trait_fn        = "fn" , identifier , [ generic_params ]
+                , "(" , [ param_list ] , ")"
+                , [ "->" , type_expr ]
+                , { contract_clause }
+                , ( ";" | block_expr ) ;
+
+type_alias_decl = "type" , identifier , [ generic_params ]
+                , [ ":" , trait_bound_list ] , ";" ;
+
+(* --- impl --- *)
+
+impl_def        = "impl" , [ generic_params ]
+                , ( impl_inherent | impl_trait ) ;
+
+impl_inherent   = type_path , "{" , { impl_item } , "}" ;
+
+impl_trait      = type_path , "for" , type_path
+                , "{" , { impl_item } , "}" ;
+
+(* negative impl: impl !Trait for Type {} *)
+impl_neg        = "!" , type_path , "for" , type_path
+                , "{" , "}" ;
+
+impl_item       = [ visibility ] , fn_def
+                | type_alias ;
+
+
+(* ================================================================== *)
+(* 8. TYPE ALIAS, NEWTYPE, CONST, STATIC                              *)
+(* ================================================================== *)
+
+type_alias      = "type" , identifier , [ generic_params ]
+                , "=" , type_expr , [ refinement ] , ";" ;
+
+newtype_def     = "newtype" , identifier
+                , "(" , type_expr , ")" , ";" ;
+
+const_def       = "const" , identifier , ":" , type_expr
+                , "=" , expr , ";" ;
+
+static_def      = "static" , [ "mut" ] , identifier , ":" , type_expr
+                , "=" , expr , ";" ;
+
+
+(* ================================================================== *)
+(* 9. STATEMENTS                                                      *)
+(* ================================================================== *)
+
+statement       = let_stmt
+                | assign_stmt
+                | break_stmt
+                | continue_stmt
+                | expr_stmt
+                | item ;
+
+let_stmt        = "let" , [ "mut" ] , pattern
+                , [ ":" , type_expr ]
+                , [ "=" , expr ] , ";" ;
+
+assign_stmt     = assign_target , assign_op , expr , ";" ;
+
+assign_op       = "="
+                | "+=" | "-=" | "*=" | "/=" | "%="
+                | "&=" | "|=" | "^="
+                | "<<=" | ">>=" ;
+
+assign_target   = identifier
+                | assign_target , "." , identifier
+                | assign_target , "[" , expr , "]"
+                | "*" , assign_target ;
+
+expr_stmt       = expr , ";" ;
+
+break_stmt      = "break" , ";" ;
+
+continue_stmt   = "continue" , ";" ;
+
+
+(* ================================================================== *)
+(* 10. EXPRESSIONS                                                    *)
+(* ================================================================== *)
+
+(*                                                                    *)
+(* precedence (highest to lowest):                                    *)
+(*   1.  primary: literals, identifiers, grouping                     *)
+(*   2.  postfix: call, field, index, method, ?, as                   *)
+(*   3.  unary:   -, !, ~, *, &, &mut                                *)
+(*   4.  cast:    as                                                  *)
+(*   5.  mul:     *, /, %                                             *)
+(*   6.  add:     +, -                                                *)
+(*   7.  shift:   <<, >>                                              *)
+(*   8.  bitand:  &                                                   *)
+(*   9.  bitxor:  ^                                                   *)
+(*  10.  bitor:   |                                                   *)
+(*  11.  cmp:     ==, !=, <, >, <=, >=                                *)
+(*  12.  and:     &&                                                  *)
+(*  13.  or:      ||                                                  *)
+(*  14.  range:   .., ..=                                             *)
+(*  15.  closure: (params) => expr                                    *)
+(*                                                                    *)
+(* binary operators at the same level are left-associative            *)
+(* except ranges which are non-associative                            *)
+(*                                                                    *)
+(* decision: precedence follows the C/Rust convention as the design   *)
+(* document specifies "C-like surface syntax with ML-family           *)
+(* constructs". bitwise operators bind tighter than comparisons,      *)
+(* which bind tighter than logical operators.                         *)
+(*                                                                    *)
+
+expr            = closure_expr
+                | or_expr
+                | range_expr ;
+
+range_expr      = or_expr , [ ( ".." | "..=" ) , or_expr ] ;
+
+or_expr         = and_expr , { "||" , and_expr } ;
+
+and_expr        = comparison_expr , { "&&" , comparison_expr } ;
+
+comparison_expr = bitor_expr , [ comparison_op , bitor_expr ] ;
+
+comparison_op   = "==" | "!=" | "<" | ">" | "<=" | ">=" ;
+
+bitor_expr      = bitxor_expr , { "|" , bitxor_expr } ;
+
+bitxor_expr     = bitand_expr , { "^" , bitand_expr } ;
+
+bitand_expr     = shift_expr , { "&" , shift_expr } ;
+
+shift_expr      = add_expr , { ( "<<" | ">>" ) , add_expr } ;
+
+add_expr        = mul_expr , { ( "+" | "-" ) , mul_expr } ;
+
+mul_expr        = cast_expr , { ( "*" | "/" | "%" ) , cast_expr } ;
+
+cast_expr       = unary_expr , { "as" , type_expr } ;
+
+unary_expr      = ( "-" | "!" | "~" | "*" | "&" | "&" , "mut" )
+                , unary_expr
+                | postfix_expr ;
+
+postfix_expr    = primary_expr , { postfix_op } ;
+
+postfix_op      = "." , identifier                               (* field access *)
+                | "." , identifier , "(" , [ arg_list ] , ")"    (* method call *)
+                | "(" , [ arg_list ] , ")"                       (* function call *)
+                | "[" , expr , "]"                                (* index *)
+                | "?" ;                                          (* error propagation *)
+
+arg_list        = expr , { "," , expr } , [ "," ] ;
+
+(* --- closure expressions --- *)
+
+closure_expr    = [ "move" ] , closure_params , [ "->" , type_expr ]
+                , "=>" , ( expr | block_expr )
+                | [ "move" ] , "fn" , "(" , [ closure_param_list ] , ")"
+                , [ "->" , type_expr ] , block_expr ;
+
+closure_params  = "(" , [ closure_param_list ] , ")" ;
+
+closure_param_list = closure_param , { "," , closure_param } ;
+
+closure_param   = identifier , [ ":" , type_expr ] ;
+
+(* --- primary expressions --- *)
+
+primary_expr    = literal
+                | path_expr
+                | "(" , expr , ")"                               (* grouping *)
+                | tuple_expr
+                | array_expr
+                | struct_expr
+                | block_expr
+                | if_expr
+                | if_let_expr
+                | match_expr
+                | while_expr
+                | while_let_expr
+                | for_expr
+                | return_expr
+                | loop_expr
+                | unsafe_expr
+                | assert_expr
+                | macro_invocation
+                | contract_builtin ;
+
+(* --- literals --- *)
+
+literal         = integer_literal
+                | float_literal
+                | string_literal
+                | char_literal
+                | bool_literal ;
+
+(* --- tuple and array construction --- *)
+
+tuple_expr      = "(" , expr , "," , [ expr , { "," , expr } ] , [ "," ] , ")" ;
+
+array_expr      = "[" , [ array_body ] , "]" ;
+
+array_body      = expr , { "," , expr } , [ "," ]                (* list form *)
+                | expr , ";" , expr ;                            (* repeat form: [val; count] *)
+
+(* --- struct construction --- *)
+
+struct_expr     = type_path , "{" , [ struct_field_init_list ] , "}" ;
+
+struct_field_init_list = struct_field_init , { "," , struct_field_init } , [ "," ] ;
+
+struct_field_init = identifier , [ ":" , expr ]                  (* shorthand: field  or  field: expr *)
+                  | ".." , expr ;                                (* struct update syntax *)
+
+(* --- block expression --- *)
+
+block_expr      = "{" , { statement } , [ expr ] , "}" ;
+
+(* --- control flow expressions --- *)
+
+if_expr         = "if" , expr , block_expr , [ "else" , ( block_expr | if_expr ) ] ;
+
+if_let_expr     = "if" , "let" , pattern , "=" , expr , block_expr
+                , [ "else" , block_expr ] ;
+
+match_expr      = "match" , expr , "{" , { match_arm } , "}" ;
+
+match_arm       = pattern , [ "if" , expr ] , "=>" , ( expr , "," | block_expr [ "," ] ) ;
+
+while_expr      = "while" , expr , { loop_invariant } , block_expr ;
+
+while_let_expr  = "while" , "let" , pattern , "=" , expr , block_expr ;
+
+for_expr        = "for" , pattern , "in" , expr , block_expr ;
+
+loop_expr       = "loop" , block_expr ;
+
+return_expr     = "return" , [ expr ] ;
+
+unsafe_expr     = "unsafe" , block_expr ;
+
+assert_expr     = "assert" , expr ;
+
+(* --- macro invocations --- *)
+
+macro_invocation = identifier , "!" , "(" , [ macro_args ] , ")"
+                 | identifier , "!" , "[" , [ macro_args ] , "]" ;
+
+macro_args      = macro_arg , { "," , macro_arg } , [ "," ] ;
+
+macro_arg       = expr | string_literal ;
+
+(* --- contract builtins (valid only inside contract clauses) --- *)
+
+contract_builtin = "old" , "(" , expr , ")"
+                 | "forall" , "(" , identifier , "in" , expr , "," , expr , ")"
+                 | "exists" , "(" , identifier , "in" , expr , "," , expr , ")"
+                 | "no_alias" , "(" , expr , "," , expr , ")"
+                 | "result" ;
+
+
+(* ================================================================== *)
+(* 11. PATTERN MATCHING                                               *)
+(* ================================================================== *)
+
+pattern         = or_pattern ;
+
+or_pattern      = pattern_atom , { "|" , pattern_atom } ;
+
+pattern_atom    = literal_pattern
+                | wildcard_pattern
+                | binding_pattern
+                | tuple_pattern
+                | struct_pattern
+                | enum_pattern
+                | ref_pattern
+                | grouped_pattern ;
+
+literal_pattern = [ "-" ] , ( integer_literal | float_literal )
+                | string_literal
+                | char_literal
+                | bool_literal ;
+
+wildcard_pattern = "_" ;
+
+binding_pattern = [ "mut" ] , identifier ;
+
+tuple_pattern   = "(" , pattern , "," , [ pattern , { "," , pattern } ] , [ "," ] , ")" ;
+
+struct_pattern  = type_path , "{" , [ struct_field_patterns ] , "}" ;
+
+struct_field_patterns = struct_field_pattern , { "," , struct_field_pattern } , [ "," ]
+                      | ".." ;
+
+struct_field_pattern  = identifier , ":" , pattern
+                      | identifier                               (* shorthand: field name as binding *)
+                      | ".." ;                                   (* rest pattern *)
+
+enum_pattern    = type_path , [ enum_payload_pattern ] ;
+
+enum_payload_pattern = "(" , [ pattern , { "," , pattern } , [ "," ] ] , ")"
+                     | "{" , struct_field_patterns , "}" ;
+
+ref_pattern     = "&" , [ "mut" ] , pattern ;
+
+grouped_pattern = "(" , pattern , ")" ;
+
+
+(* ================================================================== *)
+(* 12. ATTRIBUTES                                                     *)
+(* ================================================================== *)
+
+attribute       = "#" , "[" , attr_content , "]" ;
+
+attr_content    = simple_path , [ attr_args ] ;
+
+attr_args       = "(" , [ attr_arg_list ] , ")"
+                | "=" , literal ;
+
+attr_arg_list   = attr_arg , { "," , attr_arg } , [ "," ] ;
+
+attr_arg        = identifier , [ "=" , literal ]
+                | identifier , "(" , [ attr_arg_list ] , ")" ;
+
+(* attributes precede the item they annotate *)
+attributed_item = { attribute } , item ;
+
+
+(* ================================================================== *)
+(* 13. DOC COMMENTS AND LITERATE SOURCE                               *)
+(* ================================================================== *)
+
+(* doc comments are /// prefixed lines; they attach to the next item  *)
+(* doc comment bodies may contain ```test blocks for doc-tests        *)
+
+(* literate source (.sv0.md) uses fenced code blocks:                 *)
+(*   ```sv0 name="chunk-name"                                        *)
+(*   ... code ...                                                     *)
+(*   ```                                                              *)
+(* chunk references: <<chunk-name>>                                   *)
+(* tangling resolves references before compilation                    *)
+
+
+(* ================================================================== *)
+(* DESIGN DECISIONS                                                   *)
+(* ================================================================== *)
+
+(*                                                                    *)
+(* D1: operator precedence                                            *)
+(*     the design document specifies "C-like surface syntax" and the  *)
+(*     operator set closely mirrors Rust. precedence levels follow    *)
+(*     Rust's precedence ordering. this is consistent with the        *)
+(*     design's stated inspirations (C99 and Rust).                   *)
+(*                                                                    *)
+(* D2: semicolons                                                     *)
+(*     the design states "semicolons terminate statements". the last  *)
+(*     expression in a block does NOT require a semicolon -- it is    *)
+(*     the block's value (implicit return). a trailing semicolon      *)
+(*     converts the expression to a statement with unit type.         *)
+(*                                                                    *)
+(* D3: contract clause ordering                                       *)
+(*     multiple contract clauses appear between the function          *)
+(*     signature and the body in any order. they are conjunctive      *)
+(*     (all must hold).                                               *)
+(*                                                                    *)
+(* D4: match exhaustiveness                                           *)
+(*     match expressions must be exhaustive -- the compiler verifies  *)
+(*     that all possible values are covered. the wildcard pattern     *)
+(*     `_` provides a catch-all.                                      *)
+(*                                                                    *)
+(* D5: closure syntax                                                 *)
+(*     sv0 uses arrow syntax `(params) => expr` as the primary        *)
+(*     closure form. an alternative `fn(params) { body }` anonymous   *)
+(*     function form is also accepted but is equivalent.              *)
+(*                                                                    *)
+(* D6: `borrows` vs lifetime parameters                               *)
+(*     sv0 replaces Rust's lifetime parameters with `borrows(x, y)`  *)
+(*     contracts on function signatures and struct declarations.      *)
+(*     this is a syntactic and semantic difference from Rust.         *)
+(*                                                                    *)
+(* D7: `result` keyword                                               *)
+(*     `result` is a reserved keyword that binds to the return value  *)
+(*     only inside `ensures` clauses. it is not a general-purpose     *)
+(*     identifier.                                                    *)
+(*                                                                    *)
+(* D8: `asm!` (milestone 6)                                           *)
+(*     inline assembly uses the `asm!` macro syntax. the parser       *)
+(*     recognizes it as a macro invocation. full compilation support  *)
+(*     is deferred to milestone 6.                                    *)
+(*                                                                    *)
+(* D9: assert is a keyword                                            *)
+(*     `assert expr;` is a keyword-level statement form, not a macro  *)
+(*     invocation. it desugars to a conditional panic.                 *)
+(*                                                                    *)
+(* D10: break, continue, and loop                                     *)
+(*     `break` exits the innermost loop. `continue` skips to the      *)
+(*     next iteration. `loop { ... }` is an unconditional infinite    *)
+(*     loop. all three are keywords. `break` and `continue` are       *)
+(*     statements; `loop` is an expression.                           *)
+(*                                                                    *)
+(* D11: compound assignment operators                                  *)
+(*     `+=`, `-=`, `*=`, `/=`, `%=`, `&=`, `|=`, `^=`, `<<=`, `>>=`  *)
+(*     are supported. `x += y` desugars to `x = x + y`.              *)
+(*                                                                    *)
+(* D12: closure return type annotations                                *)
+(*     closures may have explicit return types:                       *)
+(*     `(x: i32) -> i32 => x * 2`                                    *)
+(*                                                                    *)
+(* D13: anonymous fn closure form                                      *)
+(*     `fn(params) { body }` is an alternative closure syntax,        *)
+(*     equivalent to `(params) => { body }`. both forms are accepted. *)
+(*                                                                    *)
+(* D14: const generics (Option B — inferred from bound type)           *)
+(*     generic parameters with a concrete primitive type as their     *)
+(*     bound are const parameters:                                    *)
+(*       <T, N: usize>  -- T is a type param, N is a const param     *)
+(*     the parser treats both uniformly; the type checker              *)
+(*     distinguishes them by whether the bound names a trait or a     *)
+(*     concrete type. const arguments in instantiation can be:        *)
+(*       - integer literals:  FixedBuffer<u8, 32>                     *)
+(*       - const identifiers: FixedBuffer<u8, MAX_SIZE>               *)
+(*       - const expr blocks: FixedBuffer<u8, {N + 1}>               *)
+(*                                                                    *)
+(* D15: negative literal patterns                                      *)
+(*     match patterns can include negative literals: `-1`, `-42.0`.   *)
+(*     an optional unary `-` precedes integer and float literals.     *)
+(*                                                                    *)
+(* D16: negative impls                                                 *)
+(*     `impl !Trait for Type {}` is supported for opting out of       *)
+(*     auto-derived marker traits (Send, Sync). this is parsed as     *)
+(*     a special form of impl_def.                                    *)
+(*                                                                    *)
+(* D17: struct update syntax                                           *)
+(*     `..expr` in struct construction copies remaining fields from   *)
+(*     another struct value.                                          *)
+(*                                                                    *)

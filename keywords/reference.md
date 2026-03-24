@@ -107,10 +107,10 @@ extracted from: sv0 compiler vision and design document
 |---------|---------------------------------------------------|
 | `true`  | boolean literal true                              |
 | `false` | boolean literal false                             |
-| `Some`  | `Option<T>` constructor (value present)           |
-| `None`  | `Option<T>` constructor (value absent)            |
-| `Ok`    | `Result<T, E>` constructor (success)              |
-| `Err`   | `Result<T, E>` constructor (failure)              |
+
+`Some`, `None`, `Ok`, and `Err` are NOT keywords -- they are ordinary identifiers
+that name enum variants of `Option<T>` and `Result<T, E>` (defined in `core::option`
+and `core::result`). they are resolved through the normal path and type system.
 
 ### 1.12 assertion keyword
 
@@ -131,16 +131,16 @@ extracted from: sv0 compiler vision and design document
 
 ```
 as        assert      borrows     break     const       continue
-else      ensures     enum        Err       exists      false
-fn        for         forall      if        impl        in
-let       loop        loop_invariant        match       module
-move      mut         newtype     no_alias  None        Ok
-old       project     pub         requires  result      return
-self      Self        Some        static    struct      trait
-true      type        unsafe      use       where       while
+else      ensures     enum        exists    false       fn
+for       forall      if          impl      in          let
+loop      loop_invariant          match     module      move
+mut       newtype     no_alias    old       project     pub
+requires  result      return      self      Self        static
+struct    trait       true        type      unsafe      use
+where     while
 ```
 
-total: 47 reserved keywords.
+total: 43 reserved keywords.
 
 ---
 

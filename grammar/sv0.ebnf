@@ -59,9 +59,14 @@ keyword         = "let" | "mut" | "const" | "static"
                 | "borrows" | "no_alias"
                 | "assert" | "break" | "continue" | "loop"
                 | "project"
-                | "true" | "false"
-                | "Some" | "None"
-                | "Ok" | "Err" ;
+                | "true" | "false" ;
+
+(* D19: Option/Result constructors are NOT keywords                    *)
+(*     `Some`, `None`, `Ok`, `Err` are ordinary identifiers resolved   *)
+(*     through the type system (they are enum variants of Option<T>    *)
+(*     and Result<T, E> defined in core::option and core::result).     *)
+(*     they participate in normal path resolution and pattern matching *)
+(*     via enum_pattern and path_expr.                                 *)
 
 (* --- numeric literals --- *)
 
@@ -125,21 +130,29 @@ simple_path     = identifier , { "::" , identifier } ;
 
 path_expr       = [ simple_path , "::" ] , identifier ;
 
-type_path       = simple_path , [ "::" , "<" , type_arg_list , ">" ] ;
+type_path       = simple_path , [ [ "::" ] , "<" , type_arg_list , ">" ] ;
+
+(* D18: generic angle brackets in type context                          *)
+(*     `::` before `<` is OPTIONAL in type context. `Vec<i32>` and      *)
+(*     `Vec::<i32>` (turbofish) are both valid. the turbofish form is   *)
+(*     required only in expression context to disambiguate from `<`     *)
+(*     (less-than). the parser resolves type context vs expression      *)
+(*     context before deciding.                                         *)
 
 type_arg_list   = type_or_const_arg , { "," , type_or_const_arg } ;
 
 type_or_const_arg = type_expr
                   | integer_literal
                   | bool_literal
-                  | "{" , expr , "}" ;              (* const expression block *)
+                  | "{" , expr , "}"                 (* const expression block *)
+                  | identifier , "=" , type_expr ;   (* associated type binding: Output = T *)
 
 
 (* ================================================================== *)
 (* 3. TOP-LEVEL DECLARATIONS                                          *)
 (* ================================================================== *)
 
-source_file     = [ module_decl ] , { use_decl | item } ;
+source_file     = [ module_decl ] , { use_decl | [ { attribute } ] , item } ;
 
 (* --- module declaration --- *)
 
@@ -184,6 +197,7 @@ fn_def          = [ "unsafe" ] , "fn" , identifier
                 , [ generic_params ]
                 , "(" , [ param_list ] , ")"
                 , [ "->" , type_expr ]
+                , [ where_clause ]
                 , { contract_clause }
                 , block_expr ;
 
@@ -192,6 +206,12 @@ generic_params  = "<" , generic_param , { "," , generic_param } , ">" ;
 generic_param   = identifier , [ ":" , trait_bound_list ] ;
 
 trait_bound_list = type_path , { "+" , type_path } ;
+
+(* --- where clauses --- *)
+
+where_clause    = "where" , where_predicate , { "," , where_predicate } , [ "," ] ;
+
+where_predicate = type_path , ":" , trait_bound_list ;
 
 param_list      = param , { "," , param } , [ "," ] ;
 
@@ -243,6 +263,7 @@ type_expr       = primitive_type
                 | fn_trait_type
                 | named_type
                 | unit_type
+                | self_type_path
                 | "Self" ;
 
 primitive_type  = "i8" | "i16" | "i32" | "i64" | "i128"
@@ -255,7 +276,7 @@ primitive_type  = "i8" | "i16" | "i32" | "i64" | "i128"
 
 array_type      = "[" , type_expr , ";" , expr , "]" ;
 
-slice_type      = "&" , "[" , type_expr , "]" ;
+slice_type      = "&" , [ "mut" ] , "[" , type_expr , "]" ;
 
 tuple_type      = "(" , type_expr , "," , [ type_expr , { "," , type_expr } ] , [ "," ] , ")" ;
 
@@ -274,8 +295,11 @@ type_list       = type_expr , { "," , type_expr } , [ "," ] ;
 
 named_type      = type_path ;
 
+self_type_path  = "Self" , "::" , identifier
+                , [ [ "::" ] , "<" , type_arg_list , ">" ] ;
+
 (* refined type (in type alias context) *)
-refinement      = "where" , "self" , comparison_op , expr ;
+refinement      = "where" , expr ;
 
 
 (* ================================================================== *)
@@ -286,6 +310,7 @@ refinement      = "where" , "self" , comparison_op , expr ;
 
 struct_def      = "struct" , identifier , [ generic_params ]
                 , [ struct_borrows ]
+                , [ where_clause ]
                 , "{" , [ field_list ] , "}" ;
 
 struct_borrows  = "borrows" , "(" , ident_list , ")" ;
@@ -309,6 +334,8 @@ variant_payload = "(" , type_list , ")"
 (* --- trait --- *)
 
 trait_def       = "trait" , identifier , [ generic_params ]
+                , [ ":" , trait_bound_list ]
+                , [ where_clause ]
                 , "{" , { trait_item } , "}" ;
 
 trait_item      = [ visibility ] , trait_fn
@@ -326,11 +353,13 @@ type_alias_decl = "type" , identifier , [ generic_params ]
 (* --- impl --- *)
 
 impl_def        = "impl" , [ generic_params ]
-                , ( impl_inherent | impl_trait ) ;
+                , ( impl_inherent | impl_trait | impl_neg ) ;
 
-impl_inherent   = type_path , "{" , { impl_item } , "}" ;
+impl_inherent   = type_path , [ where_clause ]
+                , "{" , { impl_item } , "}" ;
 
 impl_trait      = type_path , "for" , type_path
+                , [ where_clause ]
                 , "{" , { impl_item } , "}" ;
 
 (* negative impl: impl !Trait for Type {} *)
@@ -387,7 +416,7 @@ assign_target   = identifier
 
 expr_stmt       = expr , ";" ;
 
-break_stmt      = "break" , ";" ;
+break_stmt      = "break" , [ expr ] , ";" ;
 
 continue_stmt   = "continue" , ";" ;
 
@@ -399,7 +428,7 @@ continue_stmt   = "continue" , ";" ;
 (*                                                                    *)
 (* precedence (highest to lowest):                                    *)
 (*   1.  primary: literals, identifiers, grouping                     *)
-(*   2.  postfix: call, field, index, method, ?, as                   *)
+(*   2.  postfix: call, field, index, method, ?                       *)
 (*   3.  unary:   -, !, ~, *, &, &mut                                *)
 (*   4.  cast:    as                                                  *)
 (*   5.  mul:     *, /, %                                             *)
@@ -424,7 +453,6 @@ continue_stmt   = "continue" , ";" ;
 (*                                                                    *)
 
 expr            = closure_expr
-                | or_expr
                 | range_expr ;
 
 range_expr      = or_expr , [ ( ".." | "..=" ) , or_expr ] ;
@@ -459,6 +487,7 @@ postfix_expr    = primary_expr , { postfix_op } ;
 
 postfix_op      = "." , identifier                               (* field access *)
                 | "." , identifier , "(" , [ arg_list ] , ")"    (* method call *)
+                | "." , decimal_literal                          (* tuple field access: x.0, x.1 *)
                 | "(" , [ arg_list ] , ")"                       (* function call *)
                 | "[" , expr , "]"                                (* index *)
                 | "?" ;                                          (* error propagation *)
@@ -482,6 +511,7 @@ closure_param   = identifier , [ ":" , type_expr ] ;
 
 primary_expr    = literal
                 | path_expr
+                | "(" , ")"                                      (* unit value *)
                 | "(" , expr , ")"                               (* grouping *)
                 | tuple_expr
                 | array_expr
@@ -535,7 +565,7 @@ block_expr      = "{" , { statement } , [ expr ] , "}" ;
 if_expr         = "if" , expr , block_expr , [ "else" , ( block_expr | if_expr ) ] ;
 
 if_let_expr     = "if" , "let" , pattern , "=" , expr , block_expr
-                , [ "else" , block_expr ] ;
+                , [ "else" , ( block_expr | if_expr | if_let_expr ) ] ;
 
 match_expr      = "match" , expr , "{" , { match_arm } , "}" ;
 
@@ -747,4 +777,38 @@ attributed_item = { attribute } , item ;
 (* D17: struct update syntax                                           *)
 (*     `..expr` in struct construction copies remaining fields from   *)
 (*     another struct value.                                          *)
+(*                                                                    *)
+(* D18: generic angle brackets in type context                         *)
+(*     `::` before `<` is optional in type positions. `Vec<i32>` and   *)
+(*     `Vec::<i32>` are both valid. turbofish `::` is only required    *)
+(*     in expression context to disambiguate from `<` (less-than).     *)
+(*                                                                    *)
+(* D19: Option/Result constructors                                     *)
+(*     `Some`, `None`, `Ok`, `Err` are ordinary identifiers, not      *)
+(*     keywords. they are enum variants resolved through the normal    *)
+(*     path and type system. the lexer emits them as identifiers.      *)
+(*                                                                    *)
+(* D20: `Fn`, `FnMut`, `FnOnce` in type positions                     *)
+(*     these are identifiers, not keywords. the parser recognizes      *)
+(*     them by string matching in fn_trait_type to produce the         *)
+(*     correct AST node. the lexer emits them as identifiers.          *)
+(*                                                                    *)
+(* D21: closure vs grouping disambiguation                             *)
+(*     `(x)` is ambiguous between a grouped expression and a closure   *)
+(*     parameter list. the parser resolves this by checking for `=>`   *)
+(*     after `)`. if `=>` follows, it is a closure; otherwise it is    *)
+(*     a grouping expression. this requires one token of lookahead     *)
+(*     past the `)`.                                                   *)
+(*                                                                    *)
+(* D22: struct literal restriction in conditions                       *)
+(*     struct construction expressions (e.g., `Foo { x: 1 }`) are     *)
+(*     NOT allowed directly in `if`, `while`, `match`, or `for`       *)
+(*     conditions because the `{` is ambiguous with the block body.    *)
+(*     use parentheses or a `let` binding to construct structs in      *)
+(*     these positions.                                                *)
+(*                                                                    *)
+(* D23: return type omission                                           *)
+(*     when `-> type` is omitted from a function signature, the        *)
+(*     return type defaults to `()` (unit). explicit `-> ()` is        *)
+(*     optional but accepted.                                          *)
 (*                                                                    *)

@@ -1,51 +1,30 @@
-# Milestone 1 complete (sv0c bootstrap compiler)
+# Milestone 1 (sv0c bootstrap compiler) — aligned with `task/sv0c-milestone-1.Rmd`
 
-This document records what the **sv0c** bootstrap compiler shipped for **Milestone 1** versus what is explicitly **deferred to Milestone 2**, so the broad “in scope” language in older planning docs does not overstate the current implementation.
+This document tracks **Milestone 1** against the **original task bullets** in [`task/sv0c-milestone-1.Rmd`](../task/sv0c-milestone-1.Rmd). Implementation detail: [`sv0c/doc/compiler-passes.md`](../sv0c/doc/compiler-passes.md).
 
-**Authoritative implementation detail:** [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md).
+## Rmd acceptance criteria
 
-## Acceptance criteria (met)
+| Criterion | Status |
+|-----------|--------|
+| Compile simple programs (bindings, functions, control flow, pattern matching, basic types, contracts) to C | **Met** — see `make test`, `make e2e`, `make integration` |
+| Runtime contract checks as C assertions | **Met** — `sv0_requires` / `sv0_ensures` / runtime helpers |
+| Module system resolves imports within a project | **Met (scoped)** — `sv0c --project <dir>` loads all `*.sv0`; `module m;` + `use a::item;`; symbols mangled as `mod__name`; C entry remains `fn main` |
+| Error reporting with source spans and highlighted snippets | **Partial** — `Diagnostic.Diag` + `Diagnostic.format` for resolver `E0300` / `E0301`; other passes still mostly `Fail` strings; multi-file compile uses `format NONE` (location line, no snippet) |
+| Test suite covers each compiler pass | **Met (as in Rmd)** — lexer/parser/resolver/checker/e2e/golden/pipeline in `test/test_runner.sml`; contract analyzer remains minimal |
+| Phase 5 integration (Rmd §5) | **Met** — `task/sv0c-milestone-1/02-integration-test.sh` + `sv0c/test/integration/*`; **generics** path uses monomorphic placeholder until `<T>` typing exists; **methods** covered as struct + free function (no `impl` dispatch) |
 
-- Compiler pipeline through **C99** codegen and **host `cc`** is exercised by **`make test`** and **`make e2e`** in **sv0c**.
-- **Phases 1–6** and **Phase 9** of the internal milestone plan are done; **Phase 7–8** (traits/generics/methods and modules) are **not** required for calling M1 complete.
-- Golden file tests live under **sv0c/test/data/golden/** (`fail/` and `pass/`).
+## Commands
 
-## Shipped in Milestone 1
+- `make test` — full in-process suite (including golden).
+- `make e2e` — compile generated C, run binary (exit 42).
+- `make integration` — heap image + Rmd integration scenarios.
 
-- **Lexer / parser / AST** for the supported surface (see compiler-passes).
-- **Name resolution** with intrinsics (**`println`**, **`old`**, **`forall`**, **`exists`**, **`no_alias`**); enum variant paths (**`Enum::Variant`**); single-file / single-module assumptions for cross-module paths (qualified `module::item` remains future work).
-- **Type checker** for the vertical slice: integrals, **`bool`**, **`unit`**, **`TyString`** (string literals), structs and enums, **`match`** on enum / **`bool`** / **`i32`**, **`as`** between **integral** types only, **`println("literal")`**, **`?`** on **user-defined** enums with **`Ok(T)`** / **`Err(E)`** single-field variants when the function returns that same enum, loops and **`break`** / **`continue`**, contracts (**`requires`**, **`ensures`**, **`loop_invariant`** on **`while`**) with runtime lowering.
-- **Contract builtins (Phase 9):** **`result`**, **`old(x)`**, **`forall` / `exists`** over **`i32`** half-open ranges, **`no_alias`**, **`&` / `&mut`** in contract positions; diagnostics with **E05xx** codes and **`(hint: …)`** where applicable.
-- **IR lowering** and **C codegen** including struct/enum carriers, **`sv0_runtime.h`** helpers (**`sv0_requires`**, **`sv0_println`**, **`sv0_no_alias`**, etc.).
+## Intentional limitations (post–Milestone 1)
 
-## Reconciliation: original “in scope” wording vs reality
+- Parametric generics (`<T>`), trait/impl method dispatch, NLL, closures, heap `String`, etc. remain future milestones unless added to a new task file.
+- Single-file compile (`sv0c file.sv0`) does **not** merge sibling `.sv0` files (so golden dirs with many fixtures stay safe). Use `--project <dir>` for multi-file work.
 
-The milestone compiler plan listed a wide bootstrap subset. Below maps each theme to **M1 shipped**, **M1 partial**, or **M2** (not in the shippable M1 slice).
+## Related
 
-| Theme | Status | Notes |
-|--------|--------|--------|
-| Primitives (numeric, **`bool`**, **`unit`**, string literal type) | **M1 shipped** | No full heap **`string`** / **`String`** value API. |
-| **`let` / `mut`**, functions, **`if` / else** | **M1 shipped** | |
-| **`match`**, **`while`**, **`for`** over **`lo..hi`**, **`loop`**, **`break` / `continue`** | **M1 shipped** | |
-| Structs, enums, field access, enum constructors | **M1 shipped** | |
-| **`as` casts** | **M1 partial** | Integrals only (**E0440** for others). |
-| **`?` operator** | **M1 partial** | User enums shaped **Ok/Err** only; not a generic **`Try`** trait. |
-| **`println`** | **M1 shipped** | String **literal** argument only (**E0444**). |
-| **`print`**, format strings | **M2** | |
-| Contracts + runtime checks + Phase 9 builtins | **M1 shipped** | Analyzer pass is minimal; checking/lowering carry the weight. |
-| **Operators / patterns** | **M1 partial** | Match what the checker and parser accept today; not “all” Rust-like forms. |
-| **Generics** (type params, substitution, bounds) | **M2** | |
-| **Traits / `impl` / method dispatch** | **M2** | |
-| **`Option` / `Result` / `Vec` / `Box`** as compiler builtins | **M2** | Enum **`?`** pattern is ad hoc, not prelude types. |
-| **Modules (`module` / `use`)**, qualified paths, core prelude | **M2** | Single translation unit / single-file style for M1. |
-
-## Explicitly deferred (Milestone 2 and beyond)
-
-- **Trait and generic** typing, **method calls**, **monomorphization or vtables** (internal **m1-p7**).
-- **Cross-file modules**, **`use`**, **`module::`** value/type paths, implicit **core** prelude (internal **m1-p8**).
-- **Heap `string`**, **`Vec` / `Box`**, generic **`Option`/`Result`**, **`print`**, full operator/pattern surface, **NLL**, **closures**, and items listed under **Deferred** in the compiler vision (GATs, **`impl Trait`**, **`unsafe`**, etc.) unless and until added to a later milestone plan.
-
-## Related documents
-
-- [milestone-0-review.md](milestone-0-review.md) — design questions and early scope.
-- [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md) — pass-by-pass behavior and error codes.
+- [`milestone-0-review.md`](milestone-0-review.md)
+- [`sv0c/doc/compiler-passes.md`](../sv0c/doc/compiler-passes.md)

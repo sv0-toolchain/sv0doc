@@ -1,5 +1,7 @@
 # Milestone 1 (sv0c bootstrap compiler) — aligned with `task/sv0c-milestone-1.Rmd`
 
+**Status: complete** (task `sv0c-milestone-1` in `task/sv0c-milestone-1.Rmd` is `state: complete`).
+
 This document tracks **Milestone 1** against the **original task bullets** in [`task/sv0c-milestone-1.Rmd`](../task/sv0c-milestone-1.Rmd). Implementation detail: [`sv0c/doc/compiler-passes.md`](../sv0c/doc/compiler-passes.md).
 
 ## Rmd acceptance criteria

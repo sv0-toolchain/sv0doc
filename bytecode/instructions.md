@@ -81,8 +81,9 @@ Division and modulo follow language rules (division by zero is a runtime error).
 | `0x71` | `JUMP_IF`      | `i32` offset | Pop bool; jump if true. |
 | `0x72` | `JUMP_IF_NOT`  | `i32` offset | Pop bool; jump if false. |
 | `0x73` | `CALL`         | `u32` func_index, `u32` arg_count | Call function by index in function table. |
-| `0x74` | `RETURN`       | —        | Return to caller (return value per calling convention on stack). |
+| `0x74` | `RETURN`       | —        | Legacy: single return value (same as `RETURN_SLOTS` with count 1). |
 | `0x75` | `CALL_BUILTIN` | `u32` id | Invoke built-in by id (see runtime). |
+| `0x76` | `RETURN_SLOTS` | `u8` n   | Pop **n** stack cells as return values (`n = 0` for `void`); restore caller. Emitted by sv0c VM backend for multi-slot / void returns. |
 
 ## Heap: structs and arrays
 

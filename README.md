@@ -1,10 +1,12 @@
 # sv0doc -- sv0 language specification
 
-formal specification repository and wiki for the sv0 programming language.
+formal specification repository and **documentation hub** entry for the sv0 programming language and toolchain.
 
 ## purpose
 
-sv0doc is the **source of truth** for the sv0 language. the compiler (`sv0c`) and bytecode interpreter (`sv0vm`) implement against the specifications defined here.
+sv0doc is the **source of truth** for the **sv0 language** (grammar, types, contracts, memory model, keywords) and for **bytecode** consumed by `sv0vm`. the compiler (**sv0c**) and bytecode interpreter (**sv0vm**) implement against the specifications defined here.
+
+**Hub role (parent repo [sv0-toolchain](https://github.com/sv0-toolchain)):** this repo is the primary place for **language** and **bytecode** normative docs. for **compiler internals**, see **sv0c** (`doc/`, README). for **VM internals**, see **sv0vm** README. for **MCP server setup, graph schema, and Cursor integration**, see **sv0-mcp** README (operational docs live there; this file links them for discoverability).
 
 ## canonical design document
 
@@ -34,9 +36,12 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 
 ## relationship to other subprojects
 
-- **sv0c** implements the grammar, type rules, and contract semantics defined here
-- **sv0vm** implements the bytecode format and runtime semantics defined here
-- changes to sv0doc require corresponding changes to sv0c and/or sv0vm
+- **sv0c** implements the grammar, type rules, and contract semantics defined here (see also [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md))
+- **sv0vm** implements the bytecode format and runtime semantics defined under `bytecode/`
+- **sv0-mcp** indexes spec entities, compiler phases, VM components, and `task/` workflow in a Neo4j graph for AI-assisted development; it does not replace this spec — see [sv0-mcp/README.md](../sv0-mcp/README.md)
+- changes to normative sv0doc content typically require corresponding updates in **sv0c** and/or **sv0vm**; graph sync in **sv0-mcp** is updated separately via its sync pipeline
+
+**Workspace index:** [task/sv0-toolchain-workspace.Rmd](../task/sv0-toolchain-workspace.Rmd) in the parent **sv0-toolchain** repo lists all four submodules and aggregate commands.
 
 ## milestone status
 

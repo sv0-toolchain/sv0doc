@@ -51,7 +51,7 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 ## known deltas (shipped toolchain vs design doc)
 
 - **IR shape:** The design document’s compiler architecture describes **sv0-IR in SSA form** for optimization and multi-backend lowering. **sv0c (Milestone 1)** currently lowers to an **imperative IR** with labeled blocks (`Ir.program` in sv0c); SSA remains a planned evolution, not a mismatch in intent for the bootstrap path.
-- **Backends:** The vision names **C**, **bytecode VM**, and **LLVM** backends from sv0-IR. **Milestone 1** ships the **C** backend only; **Milestone 2 (in progress)** adds **bytecode** + **sv0vm** per `task/sv0vm-milestone-2.Rmd`.
+- **Backends:** The vision names **C**, **bytecode VM**, and **LLVM** backends from sv0-IR. **Milestone 1** ships the **C** backend; **Milestone 2 (complete)** adds **bytecode** + **sv0vm** per `task/sv0vm-milestone-2.Rmd`.
 
 ## design document
 

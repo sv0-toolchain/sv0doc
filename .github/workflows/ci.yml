@@ -1,0 +1,28 @@
+# Standalone sv0doc: specification tree is present (no executable build).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify expected spec layout
+        run: |
+          test -f README.md
+          test -f bytecode/format.md
+          test -f bytecode/instructions.md
+          test -f grammar/sv0.ebnf

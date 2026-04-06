@@ -45,7 +45,7 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 
 ## milestone status
 
-- **Milestone 0 (task `sv0doc-milestone-0`): complete** — deliverables present: `grammar/sv0.ebnf`, `type-system/rules.md`, `contracts/semantics.md`, `memory-model/ownership.md`, `keywords/reference.md`. Review notes: [milestone-0-review.md](milestone-0-review.md).
+- **Milestone 0 (task `sv0doc-milestone-0`): complete** — deliverables present: `grammar/sv0.ebnf`, `type-system/rules.md`, `contracts/semantics.md`, `memory-model/ownership.md`, `keywords/reference.md`, plus **bytecode anchors** `bytecode/format.md` and `bytecode/instructions.md` (shared with **sv0c** VM backend and **sv0vm**). The parent **sv0-toolchain** repo runs **`scripts/verify_sv0doc_baseline.py`** inside **`./scripts/sv0 test`** so these paths (and the other required **sv0doc** files) must exist and be non-empty in CI. Review notes: [milestone-0-review.md](milestone-0-review.md).
 - **Milestone 1 (task `sv0c-milestone-1`): complete** — see [milestone-1-complete.md](milestone-1-complete.md) and [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md).
 
 ## known deltas (shipped toolchain vs design doc)

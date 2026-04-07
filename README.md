@@ -36,7 +36,7 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 
 ## relationship to other subprojects
 
-- **sv0c** implements the grammar, type rules, and contract semantics defined here (see also [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md))
+- **sv0c** implements the grammar, type rules, and contract semantics defined here (see also [sv0c/doc/compiler-passes.md](../sv0c/doc/compiler-passes.md)); small runnable **`.sv0`** walkthroughs live under [sv0c/examples/learn/](../sv0c/examples/learn/) (compile with **`./scripts/sv0 vm-compile`** from the parent **sv0-toolchain** root — paths are relative to **`sv0c/`**)
 - **sv0vm** implements the bytecode format and runtime semantics defined under `bytecode/`
 - **sv0-mcp** indexes spec entities, compiler phases, VM components, and `task/` workflow in a Neo4j graph for AI-assisted development; it does not replace this spec — see [sv0-mcp/README.md](../sv0-mcp/README.md)
 - changes to normative sv0doc content typically require corresponding updates in **sv0c** and/or **sv0vm**; graph sync in **sv0-mcp** is updated separately via its sync pipeline

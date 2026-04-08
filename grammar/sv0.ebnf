@@ -390,12 +390,21 @@ static_def      = "static" , [ "mut" ] , identifier , ":" , type_expr
 (* ================================================================== *)
 (* 9. STATEMENTS                                                      *)
 (* ================================================================== *)
+(*                                                                    *)
+(*  Braced control-flow and nested blocks may omit a trailing ";"     *)
+(*  before the next statement in the same block (Rust-style).         *)
+(*  Forms: if / while / for / loop / match / { ... } block expr.      *)
+(*  Other expression statements still require ";" (e.g. calls,        *)
+(*  arithmetic). Implemented in sv0c Parser.parseBlock /              *)
+(*  exprEndsWithBracedBlock.                                            *)
+(*                                                                    *)
 
 statement       = let_stmt
                 | assign_stmt
                 | break_stmt
                 | continue_stmt
                 | expr_stmt
+                | braced_ctrl_stmt
                 | item ;
 
 let_stmt        = "let" , [ "mut" ] , pattern
@@ -415,6 +424,11 @@ assign_target   = identifier
                 | "*" , assign_target ;
 
 expr_stmt       = expr , ";" ;
+
+(* no trailing ";" before the next stmt / tail when followed by       *)
+(* another statement or the closing "}" of the enclosing block        *)
+braced_ctrl_stmt = if_expr | while_expr | for_expr | loop_expr
+                 | match_expr | block_expr ;
 
 break_stmt      = "break" , [ expr ] , ";" ;
 

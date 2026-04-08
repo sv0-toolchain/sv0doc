@@ -741,6 +741,42 @@ the compiler tracks partial moves at the field level within function bodies
 
 ---
 
+## 10. block statements: implicit separator and `if` without `else`
+
+this section aligns the formal spec with **sv0c** (bootstrap compiler) behavior
+for control flow written as **statements** inside `{ ... }`.
+
+### 10.1 implicit statement boundary after braced control flow
+
+inside a **block expression** `block_expr`, a **statement** may be either:
+
+- a traditional **expression statement** `expr_stmt` — `expr` followed by **`;`**, or
+- a **braced control-flow expression** (`if` / `while` / `for` / `loop` / `match`,
+  or a nested **`{ ... }` block expression**) **without** a trailing **`;`**
+  when immediately followed by another **statement** or by the **closing `}`**
+  of the enclosing block (tail expression position).
+
+other expression forms (calls, arithmetic, paths, etc.) still require an explicit
+**`;`** before the next statement. see **`grammar/sv0.ebnf`** (`braced_ctrl_stmt`).
+
+### 10.2 typing: `if` without `else`
+
+for **`if cond then_block`** with **no** `else` branch:
+
+- **`cond`** must have type **`bool`**.
+- the whole **`if`** expression has type **`unit`**.
+- **`then_block`** is normally checked as **`unit`**. if **`then_block`** is a
+  block whose **last statement** is **`return ...`**, the block is treated as
+  **diverging** (early exit from the enclosing function): the **`return`**
+  value is checked against the **enclosing function’s return type**, and the
+  **`if`** is still **`unit`** in the surrounding block.
+
+if **`then_block`** ends with a **non-`unit` tail expression** (e.g. `{ 1 }` with
+no `else`), that is a **type error** in this slice — the **`unit`** expectation
+is not satisfied.
+
+---
+
 ## appendix: type checking algorithm summary
 
 the sv0c type checker operates in a single pass over the resolved AST:

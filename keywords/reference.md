@@ -40,6 +40,11 @@ extracted from: sv0 compiler vision and design document
 | `break`    | exit the innermost loop                          |
 | `continue` | skip to the next iteration of the innermost loop|
 
+**block statements:** an `if` / `while` / `for` / `loop` / `match`, or a nested
+`{ ... }` block used as a statement, may omit **`;`** after the closing **`}`**
+when another statement (or the block’s tail expression) follows — see
+**`grammar/sv0.ebnf`** (`braced_ctrl_stmt`) and **`type-system/rules.md`** §10.
+
 ### 1.4 type definition keywords
 
 | keyword   | purpose                                         |

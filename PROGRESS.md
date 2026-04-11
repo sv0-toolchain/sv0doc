@@ -2,16 +2,16 @@
 
 **Meta-repo rollup:** when this tree is the `sv0doc/` submodule of **sv0-toolchain**, the parent copies this file’s **`%`** into `task/sv0-toolchain-progress.md`. **Standalone clone:** keep this file authoritative here; reconcile on the next meta-repo integration.
 
-**Last updated:** 2026-04-09 (initial seed)
+**Last updated:** 2026-04-10
 
 ## Checklist (local source of truth)
 
 | ID | Item | Done (0/1) |
 |----|------|------------|
-| DOC-1 | Formal spec layout lives under this repo and is linked from parent `task/` roadmap | 0 |
-| DOC-2 | Grammar + normative semantics sections maintained as implementation evolves | 0 |
-| DOC-3 | Bytecode / VM-facing spec sections aligned with `sv0vm` where applicable | 0 |
-| DOC-4 | Cross-links from milestone tasks (`task/sv0doc-milestone-0.Rmd`, etc.) stay valid | 0 |
+| DOC-1 | Formal spec layout lives under this repo and is linked from parent `task/` roadmap | 1 |
+| DOC-2 | Grammar + normative semantics sections maintained as implementation evolves | 1 |
+| DOC-3 | Bytecode / VM-facing spec sections aligned with `sv0vm` where applicable | 1 |
+| DOC-4 | Cross-links from milestone tasks (`task/sv0doc-milestone-0.Rmd`, etc.) stay valid | 1 |
 
 ## Completion
 
@@ -21,4 +21,5 @@
 
 ## Notes
 
-Add short bullets for the next agent: open questions, spec debt, or dependencies on `sv0c` / `sv0vm`.
+- 2026-04-10: Reconciled with `task/sv0doc-milestone-0.Rmd` (`state: complete`). All DOC items reflect M0 baseline closure: grammar (EBNF), type system, contracts, memory model, keywords, bytecode anchors under `bytecode/`. `verify_sv0doc_baseline.py` enforces required paths in `./scripts/sv0 test`.
+- Normative spec evolves with implementation; DOC-2/DOC-4 are **continuing** obligations but satisfied at M0 closure.

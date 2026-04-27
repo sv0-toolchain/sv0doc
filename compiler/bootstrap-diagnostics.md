@@ -5,7 +5,7 @@ This note is **normative for the self-hosting compiler work** tracked under **`t
 ## scope
 
 - **In scope:** how compile-time failures are **represented**, **propagated**, and **surfaced** in the **sv0** compiler sources under **`sv0c/lib/`** (and related **`lexer/`** / **`parser/`**), and how that relates to existing **span** and **diagnostic** seeds.
-- **Out of scope (deferred):** exact **stdlib** names and signatures for **`read_file` / `write_file` / `read_dir`** and related runtime hooks — those are specified under slice **M3-S-015** (T0-8) once **`sv0doc/`** and bytecode/runtime notes are updated together.
+- **Out of scope (moved):** exact **stdlib** names and signatures for **`read_file` / `write_file` / `read_dir`** — now normative in **`compiler/bootstrap-host-io.md`** (slice **M3-S-015**). This file still owns the **failure carrier** shape; host I/O owns **names + panic/Fail policy** until a later slice threads **`Result`** through I/O.
 
 ## failure representation (no exceptions in sv0)
 

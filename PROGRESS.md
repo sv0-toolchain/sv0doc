@@ -2,7 +2,7 @@
 
 **Meta-repo rollup:** when this tree is the `sv0doc/` submodule of **sv0-toolchain**, the parent copies this file’s **`%`** into `task/sv0-toolchain-progress.md`. **Standalone clone:** keep this file authoritative here; reconcile on the next meta-repo integration.
 
-**Last updated:** 2026-04-26 ( **`compiler/bootstrap-diagnostics.md`** — M3 **G0** compile-time failure + `CompileError` contract; T0-8 I/O names deferred to **M3-S-015** )
+**Last updated:** 2026-04-28 ( **`compiler/bootstrap-host-io.md`** — M3 **G2** normative **`read_file` / `write_file` / `read_dir`** for bootstrap host I/O; **`bootstrap-diagnostics.md`** cross-link updated )
 
 ## Checklist (local source of truth)
 

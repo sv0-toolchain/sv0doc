@@ -33,6 +33,7 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 | `keywords/` | reserved keyword and operator reference |
 | `memory-model/` | ownership, borrowing, borrow elision, borrows() contracts |
 | `bytecode/` | `.sv0b` container and stack instruction set (VM / VM backend) |
+| `compiler/` | bootstrap **sv0-in-sv0** interface notes (diagnostics / host I/O boundaries) — see [`compiler/bootstrap-diagnostics.md`](compiler/bootstrap-diagnostics.md) |
 
 ## relationship to other subprojects
 

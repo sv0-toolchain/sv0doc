@@ -33,7 +33,7 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 | `keywords/` | reserved keyword and operator reference |
 | `memory-model/` | ownership, borrowing, borrow elision, borrows() contracts |
 | `bytecode/` | `.sv0b` container and stack instruction set (VM / VM backend) |
-| `compiler/` | bootstrap **sv0-in-sv0** interface notes (diagnostics / host I/O boundaries) — see [`compiler/bootstrap-diagnostics.md`](compiler/bootstrap-diagnostics.md) and [`compiler/bootstrap-host-io.md`](compiler/bootstrap-host-io.md) |
+| `compiler/` | bootstrap **sv0-in-sv0** interface notes (diagnostics / host I/O / **GX** deferrals) — see [`compiler/bootstrap-diagnostics.md`](compiler/bootstrap-diagnostics.md), [`compiler/bootstrap-host-io.md`](compiler/bootstrap-host-io.md), [`compiler/bootstrap-generics-policy.md`](compiler/bootstrap-generics-policy.md) (**T0-2d** / **M3-S-054**), [`compiler/bootstrap-deferred-surface.md`](compiler/bootstrap-deferred-surface.md) (**M3-S-055**) |
 
 ## relationship to other subprojects
 

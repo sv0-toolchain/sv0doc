@@ -47,3 +47,8 @@ Any change here that alters the **minimum payload** or the **deferred I/O bounda
 
 1. update **`task/sv0-toolchain-milestone-3-self-host.Rmd`** refinement log (slice **M3-S-001** / **M3-S-015** as appropriate), and  
 2. run **`./scripts/sv0 test-guards`** (and **`./scripts/sv0 test`** when **`sv0c/lib/`** goldens move).
+
+## related (bootstrap policy)
+
+- [`bootstrap-generics-policy.md`](bootstrap-generics-policy.md) — **M3-S-054** / **T0-2d**.
+- [`bootstrap-deferred-surface.md`](bootstrap-deferred-surface.md) — **M3-S-055** / deferred closures **`impl`** / VM loop micro-opts.

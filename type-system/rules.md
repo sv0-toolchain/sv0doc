@@ -414,6 +414,12 @@ specialized copy of each generic function or type for each concrete type
 argument used. this produces efficient code (no runtime dispatch) at the cost
 of binary size.
 
+**bootstrap milestone note:** for milestone 3 self-host work, the **full**
+lowering-side duplication story (**T0-2d** / **M3-S-054**) is **explicitly
+deferred** until a future slice — checker instantiation (**§5** surfaces +
+unification) is required for accepted programs; see
+[`compiler/bootstrap-generics-policy.md`](../compiler/bootstrap-generics-policy.md).
+
 ---
 
 ## 6. trait system

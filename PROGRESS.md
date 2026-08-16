@@ -1,25 +1,18 @@
-# sv0doc — progress (submodule)
+# sv0doc — progress
 
-**Meta-repo rollup:** when this tree is the `sv0doc/` submodule of **sv0-toolchain**, the parent copies this file’s **`%`** into `task/sv0-toolchain-progress.md`. **Standalone clone:** keep this file authoritative here; reconcile on the next meta-repo integration.
+**Live status is tracked in one place:** the parent workspace's
+[`task/sv0-toolchain-progress.md`](../task/sv0-toolchain-progress.md). When this
+tree is the `sv0doc/` submodule of **sv0-toolchain**, that file is authoritative.
 
-**Last updated:** 2026-05-09 ( **`compiler/bootstrap-generics-policy.md`**, **`compiler/bootstrap-deferred-surface.md`** — M3 **GX** normative deferrals **T0-2d** / **T0-7** / **T0-9**; **`type-system/rules.md`** §5.6 bootstrap cross-link )
+## current state
 
-## Checklist (local source of truth)
+- **Milestone 0 complete** — the formal specification is in place: `grammar/`,
+  `type-system/rules.md`, `contracts/semantics.md`, `memory-model/ownership.md`,
+  `keywords/reference.md`, and the `bytecode/` anchors. The parent CI enforces
+  these paths via `scripts/verify_sv0doc_baseline.py`.
+- `compiler/bootstrap-*.md` carry the normative bootstrap deferrals (diagnostics,
+  host I/O, generics policy, deferred surface) referenced by the sv0c self-host
+  work. See [`README.md`](README.md) for the full contents map and hub role.
 
-| ID | Item | Done (0/1) |
-|----|------|------------|
-| DOC-1 | Formal spec layout lives under this repo and is linked from parent `task/` roadmap | 1 |
-| DOC-2 | Grammar + normative semantics sections maintained as implementation evolves | 1 |
-| DOC-3 | Bytecode / VM-facing spec sections aligned with `sv0vm` where applicable | 1 |
-| DOC-4 | Cross-links from milestone tasks (`task/sv0doc-milestone-0.Rmd`, etc.) stay valid | 1 |
-
-## Completion
-
-- **Done:** count rows with `Done = 1` above.
-- **Total:** row count of the checklist (increase only when adding rows; decrease with rationale in meta **run log**).
-- **%:** `Done / Total * 100` (or leave blank if `Total = 0`).
-
-## Notes
-
-- 2026-04-10: Reconciled with `task/sv0doc-milestone-0.Rmd` (`state: complete`). All DOC items reflect M0 baseline closure: grammar (EBNF), type system, contracts, memory model, keywords, bytecode anchors under `bytecode/`. `verify_sv0doc_baseline.py` enforces required paths in `./scripts/sv0 test`.
-- Normative spec evolves with implementation; DOC-2/DOC-4 are **continuing** obligations but satisfied at M0 closure.
+_Historical note: the detailed edit log lives in git history and the parent
+progress rollup; it is not duplicated here to keep a single source of truth._

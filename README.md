@@ -57,3 +57,8 @@ The [vision implementation roadmap](http://development.sasankvishnubhatla.net/tc
 ## design document
 
 The specifications here are extracted from the [sv0 compiler vision and design](http://development.sasankvishnubhatla.net/tcowmbh/task/sv0-compiler-vision-and-design.html) document. That document is the original design; sv0doc is the formalized, implementable reference.
+
+## license
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT) at your option.

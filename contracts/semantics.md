@@ -397,13 +397,25 @@ prove contracts locally within a function.
 **reporting:**
 
 ```
-$ sv0 verify
-src/gcd.sv0:3  requires(a > 0)          [runtime]  -- cannot prove (input)
-src/gcd.sv0:4  ensures(result > 0)      [verified] -- proven via loop invariant
-src/gcd.sv0:9  loop_invariant(x > 0)    [verified] -- proven
+$ sv0 verify src/gcd.sv0
+src/gcd.sv0:3  requires(a > 0)        [runtime]  -- input precondition (assumed locally)
+src/gcd.sv0:4  ensures(result > 0)    [verified] -- proven
+src/gcd.sv0:9  loop_invariant(x > 0)  [verified] -- proven
 ```
 
+each contract clause is one line: `<file>:<line>  <clause>  [verified|runtime]  --
+<reason>`. `requires` are input preconditions (assumed locally, discharged at call
+sites — see §3.3). `--json` emits a machine-readable object of the same data.
+
 **availability:** phase 2+ (requires SMT solver integration).
+
+**shipped (M4):** `sv0 verify` extracts each contract clause into an SMT-LIB2 query
+and runs `z3` (driver-orchestrated: the compiler writes the query, the `sv0` shell
+driver runs the solver). `unsat` of the negated obligation ⇒ `[verified]`;
+`sat`/`unknown`/absent-solver/outside-the-supported-fragment ⇒ `[runtime]` — only a
+solid `unsat` strips a check (soundness). VC generation covers straight-line
+bodies, `if`/`else` path conditions, and `while` loops via `loop_invariant` (entry
+∧ preservation, sibling invariants assumed together).
 
 ### 3.3 phase 3: modular static verification
 
@@ -427,6 +439,12 @@ let z = double(y);           // compiler proves y > 0 satisfies requires
 ```
 
 **availability:** phase 3+ (requires stable type system and SMT solver).
+
+**shipped (M4):** `sv0 verify` checks, per call site, that the caller's context
+implies the callee's `requires[params := args]` (reported as a `call` obligation),
+and, per `let p: T = e` where `T` is a refined alias, that `e` satisfies `T`'s
+predicate (`pred[self := e]`, a `refine` obligation) — both discharged by z3
+without re-analyzing the callee body.
 
 ---
 
@@ -456,9 +474,18 @@ contract-mode = "runtime"
 ```
 
 ```bash
-# command line override
-sv0 build --contract-mode=verified
+# command line override (flag beats sv0.toml)
+sv0 compile --contract-mode=verified src/main.sv0
 ```
+
+**shipped (M4):** `sv0 compile [--contract-mode=runtime|verified|disabled] <file>`
+resolves the mode with precedence flag > `[build] contract-mode` in an sv0.toml
+beside the file > default `runtime`. `verified` is a two-pass flow (also available
+directly as `sv0 emit-verified <file>`): (1) run the ensures obligations through
+z3; (2) recompile emitting C with the **proven** `ensures` runtime checks removed —
+`requires` and unproven `ensures` are kept (soundness). `disabled` strips every
+contract check. The proven set is keyed by each clause's source line, computed
+identically by the verify pass and by lowering.
 
 ---
 
@@ -509,6 +536,12 @@ contract strengthening follows the Liskov Substitution Principle:
 - weakening `requires`: `impl requires(x > 0)` is valid when trait has `requires(x > 5)` because the impl accepts a superset of inputs
 - strengthening `ensures`: `impl ensures(result.len() == 96)` is valid when trait has `ensures(result.len() > 0)` because the impl guarantees a subset of outputs
 
+**shipped (M4):** `sv0 verify` emits two `override` obligations per impl method that
+overrides a trait method — `trait_requires ⟹ impl_requires` (weaker) and
+`impl_ensures ⟹ trait_ensures` (stronger). `[verified]` = LSP-safe; `[runtime]` =
+the impl violates contravariance. (Assumes the trait and impl method share
+parameter names.)
+
 ---
 
 ## 6. narrowing cast contracts
@@ -538,6 +571,12 @@ let z: u8 = x as u8;
   ```
   let z: u8 = x as u8;  // runtime panic if x > 255
   ```
+
+**shipped (M4):** `sv0 verify` emits a `cast` obligation `lo <= v <= hi` per
+`v as T` for a narrow integer target `T` (u8/u16/i8/i16), assuming the enclosing
+function's `requires`. Provable ⇒ `[verified]` (safe); otherwise `[runtime]`. Cases
+that need bitmask reasoning (e.g. `& 0xFFFF`) are outside the current fragment and
+stay `[runtime]`.
 
 ### 6.3 alternatives
 

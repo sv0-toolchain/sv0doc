@@ -180,9 +180,10 @@ the refined value as `self`.
 availability: refinement types require phase 2+ verification (SMT solver).
 
 status (M4): the `where <predicate>` syntax **parses** (the predicate is stored on
-the type-alias item as a contract expression; M4-S-030). Verifying the predicate
-at each binding (M4-S-031) builds on the same VC/SMT machinery as `ensures` and
-requires resolving a refined alias to its base type at a binding site.
+the type-alias item as a contract expression; M4-S-030) and `sv0 verify`
+**checks** it at each `let p: T = e` binding (M4-S-031): the obligation
+`predicate[self := e]` is discharged by the same z3 machinery as `ensures`,
+proven from the enclosing function's `requires`.
 
 ### 2.9 newtypes
 

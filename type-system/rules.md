@@ -174,9 +174,15 @@ type BoundedBuffer<N: usize> = Vec<u8> where self.len() <= N;
 
 refined types are type aliases with compile-time-checked constraints. the
 compiler verifies the refinement predicate at every assignment. refinement
-predicates must be expressible as contract expressions.
+predicates must be expressible as contract expressions. the predicate refers to
+the refined value as `self`.
 
 availability: refinement types require phase 2+ verification (SMT solver).
+
+status (M4): the `where <predicate>` syntax **parses** (the predicate is stored on
+the type-alias item as a contract expression; M4-S-030). Verifying the predicate
+at each binding (M4-S-031) builds on the same VC/SMT machinery as `ensures` and
+requires resolving a refined alias to its base type at a binding site.
 
 ### 2.9 newtypes
 

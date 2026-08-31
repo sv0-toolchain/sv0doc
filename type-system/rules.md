@@ -98,6 +98,63 @@ the compiler proves the cast is safe or inserts a runtime check:
 - `&[T]` is a fat pointer: (data pointer, length)
 - `&mut [T]` allows mutation of elements
 
+#### 2.2.1 runtime representation and backend ABI (normative)
+
+This subsection is the accepted resolution of **sv0-strings SPEC OQ-002** and
+the enablement gates **UP-004 / UP-005**. It is *resolved-pending-implementation*:
+the representation below is normative now; landing it on both backends is tracked
+as `sv0-toolchain` slices **SS-U03b** (C), **SS-U03c** (VM `IndexAccess`), and
+**SS-U03d** (borrow compile-fail suite).
+
+**Layout.** A slice value of type `&[T]` or `&mut [T]` SHALL be a two-field
+record, in this field order:
+
+| field  | type          | meaning                                        |
+|--------|---------------|-----------------------------------------------|
+| `data` | non-null `*T` | address of element 0 of the viewed range      |
+| `len`  | `usize`       | element count of the view (not a byte count)  |
+
+- The record is passed and returned **by value** (two machine words). As `&[T]`
+  it is `Copy`; as `&mut [T]` it follows the move / exclusivity rules.
+- `data` SHALL address valid, contiguously allocated storage for `len` values of
+  `T` for the whole lifetime of the view, and is never null — even when
+  `len == 0`, `data` is a valid non-null base (the backing container's base or a
+  well-known non-null sentinel).
+- `T` has the same layout it has inside an array / `Vec<T>`; slicing performs no
+  copy and no reallocation.
+- Both backends SHALL use this identical layout and field order, so a slice
+  produced by any lowering path is ABI-compatible with every consumer
+  (`T-SLICE-ABI-001`).
+
+**Construction.** `&arr[..]`, `&v[a..b]`, `&s[a..b]` (and the `mut` forms)
+compute `data = base + a`, `len = b - a`. A range with `a > b`, or `b` past the
+source length, SHALL be a checked failure at the slicing site (contract
+violation / typed error), never an out-of-range `data` / `len` pair.
+
+**Access.** `sl[i]` (read or write) SHALL bounds-check `i < len` **before** any
+memory access and produce the *same* typed failure or contract violation on both
+backends (`UP-003` parity). `sl.len()` returns the `len` field. Unchecked
+indexing exists only under `unsafe` on a raw pointer (`memory-model` §8.4).
+
+**Borrow rules through lowering.** The exclusivity rule
+(`memory-model/ownership.md` §3.3) is enforced on the *source* before lowering;
+the lowered `{data,len}` record carries no runtime borrow state, so lowering and
+code generation SHALL NOT create a view that outlives the borrow it came from:
+
+- returning a `&[T]` / `&mut [T]` backed by a function local is rejected at
+  compile time (dangling view) on both project backends;
+- a `&mut [T]` view SHALL NOT coexist with any other live view of the same
+  region; violations are a stable diagnostic class (`SS-U03d`).
+
+**Interval overlap.** Whether two slice views overlap is a question about the
+`[data, data + len)` ranges, not pointer identity; a contract that needs
+non-overlap uses the interval predicate (`memory-model/ownership.md` §6.1,
+enablement `UP-006`), not `data_a != data_b`.
+
+**VM.** `sv0vm` SHALL accept `IndexAccess` on a slice operand of this layout
+(currently rejected), with the same bounds-check-before-access semantics; see
+`bytecode/instructions.md`.
+
 ### 2.3 tuples
 
 `(T1, T2, ..., Tn)` — heterogeneous, fixed-size, ordered collection.

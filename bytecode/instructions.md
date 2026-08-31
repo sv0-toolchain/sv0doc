@@ -32,7 +32,20 @@ The legacy **SML `--target=vm`** path (`sml-legacy/backend/vm/`) still raises on
 `FloatLit` and only ever emits `ADD_I32`; it is frozen. Use the native VM
 emitter for f64 / i64 (`./scripts/sv0 vm-native-compile`).
 
+## Slice `IndexAccess` (normative, pending implementation)
+
+Per `type-system/rules.md` §2.2.1 a slice (`&[T]` / `&mut [T]`) is a two-word
+`{ data: *T, len: usize }` record. `sv0vm` SHALL accept `IndexAccess` where the
+base operand is such a slice record: it checks `i < len` **before** any memory
+access, then reads/writes `data + i` (element stride), and on a failed check
+raises the same runtime fault class the C backend uses for a slice bounds
+violation — it never reads out of range. This form is currently rejected by the
+interpreter; enabling it is `sv0-toolchain` slice **SS-U03c** (`UP-004 / UP-005`,
+sv0-strings SPEC OQ-002). Array `IndexAccess` already follows this same
+bounds-check-before-access rule.
+
 ## See also
 
 - `sv0doc/bytecode/format.md` — container layout.
+- `sv0doc/type-system/rules.md` §2.2.1 — slice runtime representation and ABI.
 - `task/sv0vm-milestone-2.Rmd` — VM milestone criteria and tests.

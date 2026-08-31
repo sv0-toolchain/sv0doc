@@ -409,6 +409,13 @@ let buffer: Box<[u8]> = Box::new([0u8; 4096]);
 `Vec<T>` and `string` manage heap-allocated buffers that grow dynamically.
 they own their buffers and free them on drop.
 
+owned `string` has a normative three-field runtime representation
+(`{ data: non-null *u8, len: usize, cap: usize }`, embedded `\0` is content, no
+implicit terminator) — see `type-system/rules.md` §1.3.1. its length and
+comparison semantics never depend on NUL termination, and byte access /
+substring bounds-check before any memory access with the same typed failure on
+both backends.
+
 ```
 let mut v: Vec<i32> = Vec::new();
 v.push(1);

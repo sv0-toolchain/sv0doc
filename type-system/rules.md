@@ -48,6 +48,59 @@ floating-point types are `Copy`.
 
 `bool`, `char`, and `byte` are `Copy`. `string` is NOT `Copy` (owns heap data).
 
+#### 1.3.1 owned `string` runtime representation and backend ABI (normative)
+
+This subsection is the accepted resolution of **sv0-strings SPEC OQ-001** and the
+enablement gates **UP-001 / UP-002 / UP-003**. It is
+*resolved-pending-implementation*: the representation below is normative now;
+landing it is tracked as `sv0-toolchain` slices **SS-U02b** (C runtime),
+**SS-U02c** (VM alignment), and **SS-U02d** (allocation failure + `Drop`).
+
+**Layout.** An owned `string` value SHALL be a three-field record, in this field
+order:
+
+| field  | type            | meaning                                                |
+|--------|-----------------|-------------------------------------------------------|
+| `data` | non-null `*u8`  | address of content byte 0                              |
+| `len`  | `usize`         | count of content bytes (**not** a NUL-terminated len) |
+| `cap`  | `usize`         | allocated capacity in bytes; `cap >= len`             |
+
+- `string` is not `Copy`; it owns `[data, data + cap)` and frees it on drop
+  (RAII, `memory-model/ownership.md` §7.4).
+- The content is exactly `len` bytes of well-formed UTF-8. **An embedded `\0`
+  byte is content**, never a terminator; there is no implicit trailing `\0`.
+- `data` is never null, even for the empty string — `len == 0` (with
+  `cap == 0` permitted, no allocation required) uses a valid non-null base.
+- C-style terminated interop goes through `CStr` / `CString`
+  (`strings_cstr`), which validate and own their own terminator; a bare
+  `string` never carries one.
+- Both backends SHALL use this identical field set and order, so a `string`
+  produced by any lowering path is ABI-compatible with every consumer.
+
+**Length and comparison (UP-002).** `len_bytes`, complete equality, ordering,
+concatenation, byte access, and substring SHALL be defined purely from `len` and
+the byte range — never a `strlen` / `strcmp`-style scan that stops at `\0`. Two
+`string`s are equal iff their `len` is equal and all `len` bytes are equal (so
+`"a\0b"` differs from `"a"` and from `"a\0c"`).
+
+**Access (UP-003).** Byte access and substring SHALL bounds-check
+(`i < len`; `0 <= a <= b <= len`) **before** any memory access and produce the
+*same* typed failure or contract violation on both backends. Substring yields an
+owned copy (or a borrowed byte view where the API states so); it never fabricates
+a misaligned or over-long `string`.
+
+**Allocation failure and destruction.** Construction or growth that would exceed
+an allocation limit, or that the allocator rejects, SHALL surface a typed failure
+*before* the value is observable — there is no partially-initialised `string`. A
+`len + other.len` overflow in concatenation is checked before allocation, leaving
+the inputs unchanged. Drop releases `[data, data + cap)` exactly once on both
+backends. The user-facing allocator-failure and `Drop` hook surface is specified
+by **SS-U02d** (`UP-007 / UP-013`, sv0-strings SPEC OQ-003).
+
+**VM.** `sv0vm` string-table representation and string builtins SHALL align to
+these length semantics; an out-of-range access is fail-closed with the C
+backend's fault class, never a truncated or wrapped result.
+
 ### 1.4 widening and narrowing casts
 
 **widening casts** (smaller to larger type of same signedness) are always safe

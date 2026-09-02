@@ -94,8 +94,19 @@ an allocation limit, or that the allocator rejects, SHALL surface a typed failur
 *before* the value is observable — there is no partially-initialised `string`. A
 `len + other.len` overflow in concatenation is checked before allocation, leaving
 the inputs unchanged. Drop releases `[data, data + cap)` exactly once on both
-backends. The user-facing allocator-failure and `Drop` hook surface is specified
-by **SS-U02d** (`UP-007 / UP-013`, sv0-strings SPEC OQ-003).
+backends.
+
+*OQ-003 disposition (SS-U02d).* In the current bootstrap runtime the "typed
+failure" is realised as a **fail-closed abort** (`sv0_panic` on the C backend, a
+raised runtime fault on the VM): the string value is never observable in a
+partial state, but the failure is not yet a recoverable `Result`-returning
+value — a recoverable allocator-failure API is deferred to a non-bootstrap
+backend. Likewise, this runtime allocates `string` / `Vec<T>` / `Box<T>` buffers
+arena-style and releases them at process exit; per-value `Drop`/RAII for `string`
+is deferred with them (it is an unimplemented language feature, not a
+string-specific gap). A deterministic **allocation-accounting + fault-injection**
+hook (`SV0_STR_FAIL_AT` on the C backend) makes the fail-closed path testable
+without exhausting memory. See `UP-007 / UP-013` and sv0-strings SPEC OQ-003.
 
 **VM.** `sv0vm` string-table representation and string builtins SHALL align to
 these length semantics; an out-of-range access is fail-closed with the C

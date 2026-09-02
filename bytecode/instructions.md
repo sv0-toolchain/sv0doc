@@ -27,6 +27,13 @@ The `.sv0b` container has always defined `PUSH_I64` (op 5), `PUSH_F64` (op 6),
   kind, coercing a plain `CInt` literal in an f64/i64 context — matching the C
   backend's implicit promotion. Real comparisons use `Real.<`/`Real.==` (IEEE:
   NaN ⇒ false), never `Real.compare`.
+- **Unsigned wide integers** (`u64` / `usize`): the native emitter selects a
+  distinct family — `DIV_U64` (38) / `MOD_U64` (39) and the ordered comparisons
+  `LT_U64` (70) / `GT_U64` (71) / `LTE_U64` (72) / `GTE_U64` (73) — so `2⁶⁴−1`
+  (held as the `Int64` value `−1`) does not sort below `0`. Add / sub / mul
+  reuse the `I64` opcodes (mod-2⁶⁴ wrap is identical); `EQ` / `NEQ` are
+  bit-equal and need no unsigned form. The interpreter widens both operands to
+  `Word64` for these. (SS-U14.)
 
 The legacy **SML `--target=vm`** path (`sml-legacy/backend/vm/`) still raises on
 `FloatLit` and only ever emits `ADD_I32`; it is frozen. Use the native VM

@@ -34,6 +34,12 @@ The `.sv0b` container has always defined `PUSH_I64` (op 5), `PUSH_F64` (op 6),
   reuse the `I64` opcodes (mod-2⁶⁴ wrap is identical); `EQ` / `NEQ` are
   bit-equal and need no unsigned form. The interpreter widens both operands to
   `Word64` for these. (SS-U14.)
+- **Wide shifts** (`i64` / `u64` / `usize` operand): the polymorphic `SHL` (92)
+  / `SHR` (93) truncate operand and count to 32 bits, so the native emitter
+  selects `SHL_I64` (40), `SHR_I64` (41, arithmetic / sign-extending) or
+  `SHR_U64` (42, logical) from the operand category. The shift count is taken
+  mod 64. Wide bitwise `AND` / `OR` / `XOR` have no 64-bit opcode yet and still
+  fall back to the 32-bit forms. (SS-U14 residual #1.)
 
 The legacy **SML `--target=vm`** path (`sml-legacy/backend/vm/`) still raises on
 `FloatLit` and only ever emits `ADD_I32`; it is frozen. Use the native VM

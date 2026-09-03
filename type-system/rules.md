@@ -219,6 +219,18 @@ enablement `UP-006`), not `data_a != data_b`.
 (currently rejected), with the same bounds-check-before-access semantics; see
 `bytecode/instructions.md`.
 
+**String / byte-slice bridges (`SS-U16`).** Two compiler-only builtins bridge
+an owned `string` (a length-bearing `sv0_str` handle, §1.3.1) and a `&[byte]`
+view, for the `sv0-strings` `strings_text::from_utf8` / `as_bytes` surface:
+
+| Name | Type (surface) | Semantics |
+|------|----------------|-----------|
+| `string_from_bytes` | `(v: &[byte]) -> string` | New owned `string` **copied** from `v`'s bytes (each element narrowed to its low 8 bits). Exactly one owned-string allocation, fault-injectable via `SV0_STR_FAIL_AT` (`SS-U02d`); on failure it fails closed with `sv0_panic` and `v` is untouched. Embedded `0x00` is preserved. |
+| `string_byte_view` | `(s: string) -> &[byte]` | A read-only `&[byte]` view of the complete storage of `s`, embedded `0x00` included. Because `string` values are immutable and the view's backing store is arena-lived, the view can neither dangle nor observe a later change; a backend MAY materialise it. |
+
+Both lower to IR builtin ids `35` / `36` (`sv0_str_from_byte_slice` /
+`sv0_str_byte_view` in the C runtime; `CALL_BUILTIN 35` / `36` in `sv0vm`).
+
 ### 2.3 tuples
 
 `(T1, T2, ..., Tn)` — heterogeneous, fixed-size, ordered collection.

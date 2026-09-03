@@ -398,14 +398,27 @@ fn gcd(a: u32, b: u32) -> u32 {
 
 **availability:** phase 1 (initial compiler).
 
-**advanced clauses (`old`, `forall`, `exists`) — runtime lowering:** the current
-native and VM backends do not yet compile a clause whose condition uses `old`,
-`forall`, or `exists` into a runtime check. Such a clause is **model-only**: it
-is not enforced at run time, but the compiler MUST NOT drop it silently — it
-emits one stable, machine-readable note per clause to stderr
-(`sv0c: note: contract clause (<kind>) at line <N> is model-only: …`). `sv0 verify`
-still discharges these clauses through the SMT path (§3.2); only the runtime
-lowering is deferred. Simple `requires` / `ensures` are unaffected.
+**advanced clauses (`old`, `forall`, `exists`) — enforcement model (normative):**
+a `requires` / `ensures` clause whose condition uses `old`, `forall`, or
+`exists` is a **model-only** clause. Its enforcement mechanism is **`sv0 verify`
+/ phase-2 static verification (§3.2)**, not a phase-1 runtime check:
+
+1. The static verifier SHALL attempt to discharge every model-only clause. A
+   discharged clause is `verified`; an undischarged one is a sound residual
+   (`runtime` status in `sv0 verify --json`, meaning "unproven", **not**
+   "checked at run time").
+2. Phase-1 runtime lowering (both the native and the VM backend) SHALL NOT emit
+   a runtime check for a model-only clause, and SHALL NOT drop it silently. It
+   SHALL emit exactly one stable, machine-readable note per clause to stderr:
+   `sv0c: note: contract clause (<kind>) at line <N> is model-only: …`. This
+   holds under every `--contract-mode` (`runtime` included).
+3. This is the **intended contract**, not a temporary gap: the snapshot /
+   quantifier-loop desugaring a runtime check would require is deliberately not
+   part of the phase-1 backends. A future backend MAY add it; if it does, the
+   note becomes conditional on the clause not being lowered.
+
+Simple `requires` / `ensures` (no `old` / `forall` / `exists`) are always
+lowered to phase-1 runtime checks as described above and are unaffected.
 
 ### 3.2 phase 2: local static verification
 

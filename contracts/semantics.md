@@ -383,6 +383,15 @@ fn gcd(a: u32, b: u32) -> u32 {
 
 **availability:** phase 1 (initial compiler).
 
+**advanced clauses (`old`, `forall`, `exists`) — runtime lowering:** the current
+native and VM backends do not yet compile a clause whose condition uses `old`,
+`forall`, or `exists` into a runtime check. Such a clause is **model-only**: it
+is not enforced at run time, but the compiler MUST NOT drop it silently — it
+emits one stable, machine-readable note per clause to stderr
+(`sv0c: note: contract clause (<kind>) at line <N> is model-only: …`). `sv0 verify`
+still discharges these clauses through the SMT path (§3.2); only the runtime
+lowering is deferred. Simple `requires` / `ensures` are unaffected.
+
 ### 3.2 phase 2: local static verification
 
 the compiler uses an embedded SMT solver (Z3 or lightweight alternative) to

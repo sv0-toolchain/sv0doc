@@ -298,6 +298,21 @@ fn swap(a: &mut u8, b: &mut u8) -> ()
 - phase 1: runtime check compares pointer addresses
 - phase 2+: SMT solver reasons about aliasing statically
 
+**pointer inequality is not full-interval disjointness.** `no_alias(a, b)` (and
+a bare `a != b`) only says the two *base* pointers differ. It does **not** prove
+that the ranges `[a, a + alen)` and `[b, b + blen)` fail to *partially* overlap
+(`a = 0`, `b = 1`, both length ≥ 2 still overlap while `a != b`). When a
+contract needs proven range disjointness — e.g. a non-overlapping `copy` — write
+the full-interval predicate over the endpoints instead:
+
+```
+requires(a + alen <= b || b + blen <= a)   // [a,a+alen) and [b,b+blen) are disjoint
+```
+
+`sv0 verify` discharges this form from linear arithmetic (corpus
+`test/verify/corpus/interval_overlap.sv0`); it correctly leaves a
+pointer-inequality-only postcondition as an unproven runtime residual.
+
 ### 2.6 borrows(x, y)
 
 `borrows(x, y)` — declares which input references the output is tied to.

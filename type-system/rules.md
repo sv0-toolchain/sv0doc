@@ -105,8 +105,14 @@ backend. Likewise, this runtime allocates `string` / `Vec<T>` / `Box<T>` buffers
 arena-style and releases them at process exit; per-value `Drop`/RAII for `string`
 is deferred with them (it is an unimplemented language feature, not a
 string-specific gap). A deterministic **allocation-accounting + fault-injection**
-hook (`SV0_STR_FAIL_AT` on the C backend) makes the fail-closed path testable
-without exhausting memory. See `UP-007 / UP-013` and sv0-strings SPEC OQ-003.
+hook (`SV0_STR_FAIL_AT`) makes the fail-closed path testable without exhausting
+memory: on the **C backend** (`SS-U02d`) it fails the Nth `sv0_str_alloc`
+(literal interns + concat + substr + from_bytes); on the **VM backend**
+(`SS-U17`) it raises `StrAllocFail` on the Nth runtime string-allocating builtin
+— `string_concat`, `string_substr`, `string_from_bytes` (string literals are
+table-loaded, not per-run allocations) — caught like a contract violation, so
+both backends emit the identical `sv0 panic: string: allocation failed` and exit
+code 1. See `UP-007 / UP-013` and sv0-strings SPEC OQ-003 / BACKEND-004.
 
 **VM.** `sv0vm` string-table representation and string builtins SHALL align to
 these length semantics; an out-of-range access is fail-closed with the C

@@ -488,13 +488,28 @@ contracts are NOT relaxed inside unsafe blocks. the programmer writes contracts
 to document and verify the invariants that the compiler can't check:
 
 ```
-unsafe fn write_mmio(addr: usize, value: u32) -> ()
+fn write_mmio(addr: usize, value: u32) -> ()
     requires(addr != 0)
 {
     let ptr = addr as *mut u32;
-    *ptr = value;
+    unsafe {
+        *ptr = value;
+    }
 }
 ```
+
+### 8.3.1 the `unsafe` function modifier is deprecated
+
+sv0 does **not** give `unsafe fn` Rust's "whole body is implicitly unsafe"
+meaning: writing `unsafe` before `fn` has no effect on what's permitted inside
+the body. Only a block-scoped `unsafe { ... }` grants access to the operations
+in §8.2 — this is deliberate, not an oversight: a function-wide unsafe modifier
+lets one unsafe operation silently loosen the safety gate for every other line
+in the function, including code far from and unrelated to that operation. Every
+function in this document uses the block form for that reason. The `unsafe`
+keyword before `fn` still parses (for backward compatibility with existing
+sources) but should be treated as a no-op — new code should omit it and use
+`unsafe { ... }` around the specific operation instead.
 
 ### 8.4 raw pointers
 

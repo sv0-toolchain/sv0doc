@@ -76,7 +76,7 @@ when another statement (or the block’s tail expression) follows — see
 
 | keyword  | purpose                                          |
 |----------|--------------------------------------------------|
-| `unsafe` | opt out of borrow checking for unsafe operations |
+| `unsafe` | opt out of borrow checking for unsafe operations (block form, `unsafe { ... }`, only — the `unsafe fn` modifier still parses but is deprecated/inert, see memory-model/ownership.md §8.3.1) |
 | `move`   | force closure to capture environment by value    |
 
 ### 1.8 casting keyword

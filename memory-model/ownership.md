@@ -381,6 +381,33 @@ memory contracts follow the same phased verification as all other contracts:
 | phase 2 | SMT solver reasons about aliasing statically           |
 | phase 3 | cross-function borrow analysis, modular proofs         |
 
+### 6.5 fill_explicit — non-elidable store guarantee
+
+`fill_explicit(dst: &mut [byte], value: byte) -> ()` is a **compiler
+intrinsic**, not an ordinary function: it sets every byte of `dst` to
+`value` (like `fill`), but additionally guarantees that a conforming
+backend **SHALL NOT** remove, reorder past an observable side effect, or
+coalesce away any store it produces — regardless of whether `dst` is
+provably dead afterward. This is the property C23 `memset_explicit` and
+POSIX `explicit_bzero` provide over plain `memset`: without it, a
+scrub-then-drop of sensitive memory (keys, passwords, plaintext) may be
+silently removed as a dead store by an optimizing backend, because nothing
+about an ordinary `dst[i] = value` store is distinguishable from any other
+store a dead-code-elimination pass is free to drop.
+
+No other guarantee changes: `fill_explicit` bounds its writes to
+`dst.len()` on every path exactly like `fill`, and is not a memory-safety
+primitive — it is a *side-effect visibility* primitive. A backend is free
+to choose its own mechanism (a `volatile`-qualified store loop, a call to
+a host non-eliding primitive, a dedicated non-elidable instruction) as
+long as the guarantee holds; this rule constrains observable behavior, not
+implementation.
+
+Being a compiler intrinsic rather than a plain function means the
+guarantee attaches to the call site itself, not to an ordinary function
+signature — an important distinction, since nothing in sv0's type system
+otherwise lets a function declare "my stores must not be optimized away."
+
 ---
 
 ## 7. allocation

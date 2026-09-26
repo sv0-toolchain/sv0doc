@@ -45,6 +45,15 @@ The legacy **SML `--target=vm`** path (`sml-legacy/backend/vm/`) still raises on
 `FloatLit` and only ever emits `ADD_I32`; it is frozen. Use the native VM
 emitter for f64 / i64 (`./scripts/sv0 vm-native-compile`).
 
+## Coverage: `COVER_HIT` (opcode 119, normative, pending implementation)
+
+`COVER_HIT <u32le local counter index>` is a five-byte, stack-neutral
+instruction with no source form that increments one saturating coverage
+counter. It exists only in coverage profiles (`sv0vm-v1-coverage`, with an
+explicit `.sv0covbind.json` companion); `sv0vm-v1-core` rejects opcode 119 as
+unknown at load. Opcode 119 is reserved for it in every profile. Full
+contract: [`coverage.md`](coverage.md).
+
 ## Slice `IndexAccess` (normative, pending implementation)
 
 Per `type-system/rules.md` §2.2.1 a slice (`&[T]` / `&mut [T]`) is a two-word
@@ -60,5 +69,6 @@ bounds-check-before-access rule.
 ## See also
 
 - `sv0doc/bytecode/format.md` — container layout.
+- `sv0doc/bytecode/coverage.md` — `COVER_HIT` and the `sv0vm-v1-coverage` profile.
 - `sv0doc/type-system/rules.md` §2.2.1 — slice runtime representation and ABI.
 - `task/sv0vm-milestone-2.Rmd` — VM milestone criteria and tests.

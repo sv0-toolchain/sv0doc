@@ -12,4 +12,10 @@ This document is the **sv0doc** anchor for the bytecode **file layout**. The aut
 - **Emit**: `sv0c` VM backend writes `*.sv0b` under `sv0c/build/vm/`.
 - **Execute**: `sv0vm` loads the same layout; integration tests exercise round-trips.
 
+## Coverage
+
+The coverage revision (`coverage.md`) does not change the v1 layout: coverage
+metadata for `sv0vm-v1-coverage` lives in an explicit, digest-bound companion
+file, never in or after the `.sv0b` bytes.
+
 When the on-disk layout changes, update this file and the **instructions** reference together.

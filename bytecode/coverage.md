@@ -165,15 +165,22 @@ generated C, so VM and native counts agree (sv0cov SPEC COV-VM-001).
 
 ## 7. Reserved identifiers
 
+<!-- BEGIN GENERATED: coverage identifiers (scripts/gen_coverage_identifiers.py) -->
 | Identifier | Exact representation | Scope |
 |---|---|---|
-| `COVER_HIT` | opcode 119 (`0x77`) | every profile, every container version |
-| v2 section tag | ASCII `COVR` (`43 4f 56 52`) | unique v2 section tag (R1) |
-| coverage capability | `sv0cov.coverage.v1` | v1 companion and v2 section |
-| plan capability | `sv0cov.plan.v1` | v1 companion and v2 section |
-| v1 companion schema | `sv0cov.vm-binding`, version `1.0` | `.sv0covbind.json` |
-| v1 profile | `sv0vm-v1-coverage` | companion `profile` |
+| `COVER_HIT` | opcode 119 (`0x77`), `u32le` operand, 5 bytes | every profile, every container version |
+| coverage_capability | `sv0cov.coverage.v1` | v1 companion and v2 section |
+| plan_capability | `sv0cov.plan.v1` | v1 companion and v2 section |
+| v1_profile | `sv0vm-v1-coverage` | companion `profile` |
+| v2_profile | `sv0vm-v2-typed` | v2 container with the coverage capability (R1) |
+| v2_section_tag | `COVR` (ASCII `43 4f 56 52`) | unique v2 section tag (R1) |
+| vm_binding_schema | `sv0cov.vm-binding` | `.sv0covbind.json` `schema` |
+| vm_binding_version | `1.0` | `.sv0covbind.json` `version` |
+<!-- END GENERATED: coverage identifiers -->
 
-Comparisons are byte-exact and case-sensitive; no aliases, prefixes,
-normalisation, or case folding. `CV-102` generates one shared registry of
-these identifiers and guards sv0c and sv0vm against divergence.
+The table is generated from the machine-readable registry
+[`coverage-identifiers.json`](coverage-identifiers.json). sv0c and sv0vm keep
+byte-identical copies that their test suites check against their encoders
+and decoders, and the sv0-toolchain root guard checks every copy and sv0cov's
+constants against this file (CV-102). Comparisons are byte-exact and
+case-sensitive; no aliases, prefixes, normalisation, or case folding.

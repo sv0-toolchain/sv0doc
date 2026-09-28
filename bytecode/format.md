@@ -2,6 +2,15 @@
 
 This document is the **sv0doc** anchor for the bytecode **file layout**. The authoritative wire format and version bytes are defined alongside the reference interpreter in **sv0vm** (see `sv0vm/src/` and milestone-2 task notes).
 
+> **Planned normative extraction.** Per
+> `project-specs/sv0vm-implementation-expand/SPEC.md` (GOV-001, Phase 0), this
+> file becomes the complete `.sv0b` v1 container contract (primitive
+> encodings, sections, 20-byte function records, canonicality), and the v2
+> typed container is frozen here before independent VM implementations
+> start. Until then, the audited `sv0c` encoder, native VM emitter, `sv0vm`
+> decoder, and parity corpus are the provisional baseline. Planning: parent
+> repo `task/sv0vm-multi-implementation.Rmd` (VMX-002, VMX-005).
+
 ## Scope
 
 - **Magic / version**: fixed header bytes accepted by the loader.

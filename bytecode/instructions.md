@@ -45,7 +45,7 @@ The legacy **SML `--target=vm`** path (`sml-legacy/backend/vm/`) still raises on
 `FloatLit` and only ever emits `ADD_I32`; it is frozen. Use the native VM
 emitter for f64 / i64 (`./scripts/sv0 vm-native-compile`).
 
-## Coverage: `COVER_HIT` (opcode 119, normative, pending implementation)
+## Coverage: `COVER_HIT` (opcode 119, normative; emitted by sv0c, not yet run by sv0vm)
 
 `COVER_HIT <u32le local counter index>` is a five-byte, stack-neutral
 instruction with no source form that increments one saturating coverage

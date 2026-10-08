@@ -9,8 +9,10 @@ companion, `<stem>.sv0covbind.json`, as of `CV-118`. sv0vm decodes,
 disassembles and executes `COVER_HIT` and rejects an unbound or
 out-of-range one at load as of `CV-119`, and loads the companion
 (`sv0 vm-run --coverage-binding <path>`, `SV0B_COVERAGE_BINDING` for
-`sv0vm/scripts/run_sv0b.sml`) as of `CV-120`; the raw profile is `CV-121`,
-and the pre-coverage decoder pin `CV-122` (`task/sv0cov-checklist.Rmd`). The typed-v2 inline form (`COVR` section,
+`sv0vm/scripts/run_sv0b.sml`) as of `CV-120`. As of `CV-121` it reads the
+`SV0COV_*` transport like the native runtime and publishes one raw profile
+(`BACKEND_VM_V1`) when the program returns or fails a contract. The
+pre-coverage decoder pin is `CV-122` (`task/sv0cov-checklist.Rmd`). The typed-v2 inline form (`COVR` section,
 profile `sv0vm-v2-typed` with the coverage capability) is staged to sv0cov R1
 (SPEC §15.4, §15.6) and is specified in a later revision of this page.
 

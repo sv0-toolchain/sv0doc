@@ -7,10 +7,10 @@ the toolchain emits or executes coverage instrumentation. sv0c emits
 `bytecode.sv0` encodes, sizes and disassembles it) and writes the §4
 companion, `<stem>.sv0covbind.json`, as of `CV-118`. sv0vm decodes,
 disassembles and executes `COVER_HIT` and rejects an unbound or
-out-of-range one at load as of `CV-119`; loading the companion
-(`--coverage-binding`) is `CV-120`, the raw profile `CV-121`, and the
-pre-coverage decoder pin `CV-122` (`task/sv0cov-checklist.Rmd`). Until
-`CV-120`, sv0vm runs no instrumented program. The typed-v2 inline form (`COVR` section,
+out-of-range one at load as of `CV-119`, and loads the companion
+(`sv0 vm-run --coverage-binding <path>`, `SV0B_COVERAGE_BINDING` for
+`sv0vm/scripts/run_sv0b.sml`) as of `CV-120`; the raw profile is `CV-121`,
+and the pre-coverage decoder pin `CV-122` (`task/sv0cov-checklist.Rmd`). The typed-v2 inline form (`COVR` section,
 profile `sv0vm-v2-typed` with the coverage capability) is staged to sv0cov R1
 (SPEC §15.4, §15.6) and is specified in a later revision of this page.
 
@@ -95,6 +95,17 @@ user instruction or host effect:
 5. Require consistency: `program_counter_count > 0` if and only if at least one
    `COVER_HIT` is present.
 6. Allocate `program_counter_count` zeroed counters and the saturation record.
+
+The reference sv0vm checks a supplied companion against the raw file bytes
+(step 3's length and SHA-256) before decoding them, so changed bytecode is
+reported as `COV2202` rather than as whatever decoding the changed bytes
+would raise. The outcome for valid input is the same in either order.
+
+Steps 4 and 5 are all the VM can check about the count. A companion edited
+to a larger `program_counter_count` still passes them (every operand stays
+in range); the companion is not authenticated (§4.2), and a raw profile
+written against the wrong count is rejected later by the raw-profile reader,
+which checks it against the map.
 
 A failure at any step rejects the program with a diagnostic (sv0cov registry
 codes `COV2201` invalid binding, `COV2202` bytecode/binding mismatch) and runs

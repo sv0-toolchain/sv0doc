@@ -1,6 +1,6 @@
 # Bytecode coverage revision (v1): `COVER_HIT` and `sv0vm-v1-coverage`
 
-Status: **normative, partly implemented.** This is the authoritative
+Status: **normative; v1 implemented** (typed-v2 staged to R1). This is the authoritative
 bytecode-contract change that sv0cov SPEC §15.1–15.3 and §16.8 require before
 the toolchain emits or executes coverage instrumentation. sv0c emits
 `COVER_HIT` as of `CV-117` (`sv0 vm-native-compile --coverage=instrument`;
@@ -11,8 +11,9 @@ out-of-range one at load as of `CV-119`, and loads the companion
 (`sv0 vm-run --coverage-binding <path>`, `SV0B_COVERAGE_BINDING` for
 `sv0vm/scripts/run_sv0b.sml`) as of `CV-120`. As of `CV-121` it reads the
 `SV0COV_*` transport like the native runtime and publishes one raw profile
-(`BACKEND_VM_V1`) when the program returns or fails a contract. The
-pre-coverage decoder pin is `CV-122` (`task/sv0cov-checklist.Rmd`). The typed-v2 inline form (`COVR` section,
+(`BACKEND_VM_V1`) when the program returns or fails a contract. `CV-122`
+pins the pre-coverage decoder's rejection (§3.1). The v1 profile is complete
+(`task/sv0cov-checklist.Rmd`). The typed-v2 inline form (`COVR` section,
 profile `sv0vm-v2-typed` with the coverage capability) is staged to sv0cov R1
 (SPEC §15.4, §15.6) and is specified in a later revision of this page.
 
@@ -120,7 +121,11 @@ decodes every function while loading and fails with `unknown opcode 119`
 before execution starts (`Bytecode.decodeInsnVec`, via `decodeFile` → `decodeAll`; the `| _ => raise Fail
 ("unknown opcode ...")` arm). The `sv0vm-implementation-expand` profiles
 likewise fail every unlisted opcode as `ELOAD_UNKNOWN_OPCODE`. `CV-122` pins
-this behaviour with a regression test against the pre-coverage decoder.
+this: sv0vm keeps the pre-coverage decoder (sv0vm `5c52484`) byte for byte in
+`test/fixtures/pre-coverage/bytecode.sml`, and `test/old_vm_test.sml`
+requires it to refuse instrumented bytecode (a hit in `main`, in another
+function, last in the code, and sv0c's real `f0` output) with exactly
+`unknown opcode 119`, while still decoding uninstrumented bytecode.
 
 ## 4. The v1 companion binding
 

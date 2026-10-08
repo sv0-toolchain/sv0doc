@@ -5,9 +5,12 @@ bytecode-contract change that sv0cov SPEC §15.1–15.3 and §16.8 require befor
 the toolchain emits or executes coverage instrumentation. sv0c emits
 `COVER_HIT` as of `CV-117` (`sv0 vm-native-compile --coverage=instrument`;
 `bytecode.sv0` encodes, sizes and disassembles it) and writes the §4
-companion, `<stem>.sv0covbind.json`, as of `CV-118`; sv0vm
-decode/verify/execution is `CV-119`..`CV-122` (`task/sv0cov-checklist.Rmd`).
-Until then sv0vm rejects the opcode (§3.1). The typed-v2 inline form (`COVR` section,
+companion, `<stem>.sv0covbind.json`, as of `CV-118`. sv0vm decodes,
+disassembles and executes `COVER_HIT` and rejects an unbound or
+out-of-range one at load as of `CV-119`; loading the companion
+(`--coverage-binding`) is `CV-120`, the raw profile `CV-121`, and the
+pre-coverage decoder pin `CV-122` (`task/sv0cov-checklist.Rmd`). Until
+`CV-120`, sv0vm runs no instrumented program. The typed-v2 inline form (`COVR` section,
 profile `sv0vm-v2-typed` with the coverage capability) is staged to sv0cov R1
 (SPEC §15.4, §15.6) and is specified in a later revision of this page.
 

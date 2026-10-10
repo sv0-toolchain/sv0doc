@@ -176,6 +176,12 @@ without any hit, or any hit with a zero count, is rejected (§3 step 5).
   bound is the selected raw-profile tier (sv0cov SPEC §16.4): `standard`
   admits 4,194,304 counters, `large` 16,777,216, `custom` as configured. A
   producer refuses to emit a program over its tier; a VM refuses to load one.
+  A VM's tier is `standard` unless its launcher names another
+  (`sv0 vm-run --raw-profile-tier standard|large|custom`, with
+  `--raw-profile-max-counters` and `--raw-profile-max-bytes` for `custom`);
+  the `SV0COV_*` transport cannot set it. At publish, a VM refuses a profile
+  whose encoded length exceeds the tier's byte ceiling (`standard` 64 MiB,
+  `large` 256 MiB) before it creates any file. Both refusals are `COV6001`.
 - A companion is at most 4096 bytes (§4.2).
 - `COVER_HIT` adds no section to v1, so v1 section-size limits are unchanged.
 

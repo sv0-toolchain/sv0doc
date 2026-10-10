@@ -127,6 +127,33 @@ requires it to refuse instrumented bytecode (a hit in `main`, in another
 function, last in the code, and sv0c's real `f0` output) with exactly
 `unknown opcode 119`, while still decoding uninstrumented bytecode.
 
+### 3.2 How a run ends
+
+A bound program's run ends in one of three ways, and each matches what the
+same program does as a native executable (sv0cov SPEC §14.2.2, §14.3, §15.5):
+
+| End | Process status | Profile |
+|---|---|---|
+| `main` returns | the low 8 bits of the result | published |
+| contract failure (`sv0 contract violation: ...`) | 1 | published |
+| runtime panic (`sv0 panic: ...`) | 1 | published |
+| fatal VM failure (`sv0vm: fatal: ...`) | 134 | none |
+| signal, hard kill | by the signal | none |
+
+A runtime panic is one the C runtime defines, with the same message: a `Vec`,
+string or slice index out of bounds, a substring out of bounds, a file that
+cannot be read or written. Any other failure inside the VM, including integer
+division by zero, is fatal: the run is incomplete and nothing is published.
+The `vm_exit:<code>` line is printed only for the first three rows.
+
+With `SV0COV_REQUIRED=1`, a transport failure (`COV2001`) or an entropy
+failure (`COV2002`) stops the VM with status 1 before any user instruction,
+and a profile that cannot be published (`COV2010`, `COV2112`, `COV6001`)
+makes the status 1 whatever the program returned. Otherwise the program runs
+and keeps its own status, and no profile is published. A load-time rejection
+(§3, §4.2: `COV2201`, `COV2202`, an over-tier map) always stops the VM with
+status 1, required or not: a VM cannot execute a `COVER_HIT` it has not bound.
+
 ## 4. The v1 companion binding
 
 ### 4.1 Schema

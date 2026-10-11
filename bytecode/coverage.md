@@ -142,8 +142,10 @@ same program does as a native executable (sv0cov SPEC §14.2.2, §14.3, §15.5):
 
 A runtime panic is one the C runtime defines, with the same message: a `Vec`,
 string or slice index out of bounds, a substring out of bounds, a file that
-cannot be read or written. Any other failure inside the VM, including integer
-division by zero, is fatal: the run is incomplete and nothing is published.
+cannot be read or written, an integer division or remainder by zero, and
+`MIN / -1` (type-system/rules.md §1.5). Any other failure inside the VM, such
+as corrupt bytecode, is fatal: the run is incomplete and nothing is
+published.
 The `vm_exit:<code>` line is printed only for the first three rows.
 
 With `SV0COV_REQUIRED=1`, a transport failure (`COV2001`) or an entropy

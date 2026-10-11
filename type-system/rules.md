@@ -147,6 +147,33 @@ the compiler proves the cast is safe or inserts a runtime check:
 
 **signedness casts** follow the same rules: `i32 as u32` requires the value is non-negative.
 
+### 1.5 integer division and remainder
+
+`a / b` and `a % b` on integers truncate toward zero: `-7 / 2` is `-3` and
+`-7 % 3` is `-1` (the remainder takes the dividend's sign).
+
+two cases have no result and are **runtime panics** on every backend:
+
+| case | applies to | panic |
+|------|------------|-------|
+| `b == 0` | every integer type, `/` and `%` | `sv0 panic: division by zero` |
+| `a == MIN` and `b == -1` | signed types, `/` and `%` | `sv0 panic: division overflow` |
+
+the process prints the message on stderr and exits with status 1, like the
+bounds panics. the check is always present: it does not depend on the
+contract mode, and it is not an implicit contract.
+
+floating-point division is IEEE-754 and never panics: `1.0 / 0.0` is
+infinity.
+
+**implementation.** the C backend writes every `/` and `%` as `SV0_DIV` /
+`SV0_MOD` (`sv0_runtime.h`), which select a checked helper from the operands'
+type and leave floating-point division alone. `sv0vm` raises the same panics
+in `DIV_I32`, `MOD_I32`, `DIV_I64`, `MOD_I64`, `DIV_U64` and `MOD_U64`. before
+this rule the C backend had undefined behavior here (a zero quotient on
+arm64, `SIGFPE` on x86-64) and the VM stopped with a fatal error or, for
+`MIN / -1`, wrapped.
+
 ---
 
 ## 2. composite types

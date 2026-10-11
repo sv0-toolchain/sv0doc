@@ -22,7 +22,9 @@ The `.sv0b` container has always defined `PUSH_I64` (op 5), `PUSH_F64` (op 6),
   to `PUSH_I64`.
 - **`sv0vm` interpreter**: `cell` gained `CF64 of real` and `CI64 of Int64.int`.
   `ADD_F64`…`NEG_F64` run IEEE-754 arithmetic; `ADD_I64`…`NEG_I64` wrap mod
-  2⁶⁴ (`Word64`) with truncate-toward-zero div/mod. The polymorphic
+  2⁶⁴ (`Word64`) with truncate-toward-zero div/mod; a zero divisor and
+  `MIN / -1` are panics for every integer div/mod opcode
+  (type-system/rules.md §1.5). The polymorphic
   comparisons (`EQ`/`NEQ`/`LT`/`GT`/`LTE`/`GTE`) dispatch on the operand cell
   kind, coercing a plain `CInt` literal in an f64/i64 context — matching the C
   backend's implicit promotion. Real comparisons use `Real.<`/`Real.==` (IEEE:

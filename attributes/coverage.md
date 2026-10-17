@@ -175,8 +175,13 @@ argument is at fault).
 
 ## 8. implementation status
 
-this page is the R0.1 language definition (sv0cov CV-301). sv0c does not
-implement it yet: its parser skips every attribute except `#[extern_c]`, so a
-`coverage` attribute is currently ignored, which section 5 forbids. retention
-and validation come with sv0cov CV-302, exclusion resolution with CV-305,
-formatting with CV-303, and comment directives with CV-304.
+this page is the R0.1 language definition (sv0cov CV-301). sv0c keeps and
+validates `coverage` attributes since sv0cov CV-302: a front-end pass
+(`sv0c/lib/attributes.sv0`) records every attribute with its span, argument
+spans, and the construct it attaches to, checks sections 1 to 3 in every
+build with the diagnostics of section 7, and gives the parser the token
+stream without the attributes it need not see. the mode-to-construct and
+redundancy checks of section 4 and the exclusion effect come with CV-305;
+until then a valid `coverage` attribute is refused in a `--coverage=map` or
+`instrument` build (`COV1021`) rather than ignored. formatting comes with
+CV-303 and comment directives with CV-304.

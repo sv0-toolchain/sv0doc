@@ -29,3 +29,9 @@ jobs:
           test -f bytecode/format.md
           test -f bytecode/instructions.md
           test -f grammar/sv0.ebnf
+          test -f attributes/coverage.md
+
+      - name: Generated registries and tables are current
+        run: |
+          python3 scripts/gen_coverage_identifiers.py
+          python3 scripts/gen_coverage_attribute.py

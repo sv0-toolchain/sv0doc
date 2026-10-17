@@ -261,7 +261,7 @@ can only be used in functions returning `Result` or `Option`.
 | `=>`     | closure arrow / match arm  | closures/match| built-in   |
 | `::`     | path separator             | paths         | built-in   |
 | `.`      | field access / method call | expressions   | built-in   |
-| `#[...]` | attribute annotation       | items         | built-in   |
+| `#[...]` | attribute annotation       | items, statements | built-in   |
 
 ### 2.11 assignment and compound assignment operators
 
@@ -365,3 +365,18 @@ these identifiers are recognized as type names by the parser:
 | `char`   | unicode scalar value (UTF-32)     |
 | `byte`   | alias for `u8`                    |
 | `string` | owned UTF-8 string                |
+
+---
+
+## 6. reserved attribute names
+
+attribute paths are not keywords, but these are reserved: no other attribute
+may use them, and the compiler validates them in every build.
+
+| attribute | meaning | defined in |
+|-----------|---------|------------|
+| `coverage` | coverage exclusion: `off`, `branch_off`, `contract_off` with a required `reason` | [`attributes/coverage.md`](../attributes/coverage.md) |
+
+case variants and prefixed forms of a reserved name (`Coverage`, `sv0cov`,
+`sv0::coverage`) are rejected, not treated as aliases.
+

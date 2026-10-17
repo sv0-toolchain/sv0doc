@@ -152,7 +152,7 @@ type_or_const_arg = type_expr
 (* 3. TOP-LEVEL DECLARATIONS                                          *)
 (* ================================================================== *)
 
-source_file     = [ module_decl ] , { use_decl | [ { attribute } ] , item } ;
+source_file     = [ module_decl ] , { use_decl | attributed_item } ;
 
 (* --- module declaration --- *)
 
@@ -336,7 +336,7 @@ variant_payload = "(" , type_list , ")"
 trait_def       = "trait" , identifier , [ generic_params ]
                 , [ ":" , trait_bound_list ]
                 , [ where_clause ]
-                , "{" , { trait_item } , "}" ;
+                , "{" , { { attribute } , trait_item } , "}" ;
 
 trait_item      = [ visibility ] , trait_fn
                 | type_alias_decl ;
@@ -356,11 +356,11 @@ impl_def        = "impl" , [ generic_params ]
                 , ( impl_inherent | impl_trait | impl_neg ) ;
 
 impl_inherent   = type_path , [ where_clause ]
-                , "{" , { impl_item } , "}" ;
+                , "{" , { { attribute } , impl_item } , "}" ;
 
 impl_trait      = type_path , "for" , type_path
                 , [ where_clause ]
-                , "{" , { impl_item } , "}" ;
+                , "{" , { { attribute } , impl_item } , "}" ;
 
 (* negative impl: impl !Trait for Type {} *)
 impl_neg        = "!" , type_path , "for" , type_path
@@ -572,7 +572,7 @@ struct_field_init = identifier , [ ":" , expr ]                  (* shorthand: f
 
 (* --- block expression --- *)
 
-block_expr      = "{" , { statement } , [ expr ] , "}" ;
+block_expr      = "{" , { attributed_statement } , [ expr ] , "}" ;
 
 (* --- control flow expressions --- *)
 
@@ -680,8 +680,19 @@ attr_arg_list   = attr_arg , { "," , attr_arg } , [ "," ] ;
 attr_arg        = identifier , [ "=" , literal ]
                 | identifier , "(" , [ attr_arg_list ] , ")" ;
 
-(* attributes precede the item they annotate *)
-attributed_item = { attribute } , item ;
+(* attributes precede the item or statement they annotate and attach   *)
+(* to exactly that construct: only whitespace, comments, and further  *)
+(* attributes may come between (attributes/coverage.md section 2).    *)
+(* there is no expression attribute: an attribute before a block's    *)
+(* tail expression, a match arm, a field, a variant, a parameter, an  *)
+(* "else", a lone ";", or a closing "}" is an error.                  *)
+attributed_item      = { attribute } , item ;
+
+attributed_statement = { attribute } , statement ;
+
+(* the top-level path `coverage` is reserved for toolchain-wide        *)
+(* coverage semantics: attributes/coverage.md, attributes/             *)
+(* coverage-attribute.json.                                            *)
 
 
 (* ================================================================== *)

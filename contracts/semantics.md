@@ -398,6 +398,16 @@ fn gcd(a: u32, b: u32) -> u32 {
 
 **availability:** phase 1 (initial compiler).
 
+**shipped:** sv0c checks `requires` at entry, `ensures` before every return
+(however deeply nested), `loop_invariant` at the head of every iteration
+(so once more when the loop exits), and `assert` (keywords reference 1.12)
+on the generated-C and VM backends since sv0cov CV-306; before that,
+`assert` only evaluated its condition, `loop_invariant` was not checked at
+runtime, and an early `return` inside an `if` or loop skipped `ensures`.
+model-only clauses (`old`, `forall`, `exists`) are not checked at runtime
+(compiler note, SS-U05). a failure prints `sv0 contract violation: <kind>
+failed in <fn>` and exits 1.
+
 **advanced clauses (`old`, `forall`, `exists`) — enforcement model (normative):**
 a `requires` / `ensures` clause whose condition uses `old`, `forall`, or
 `exists` is a **model-only** clause. Its enforcement mechanism is **`sv0 verify`

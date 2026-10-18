@@ -143,7 +143,9 @@ and leave only their denominators.
 the effect follows the plan. `off`, and every comment directive, takes the
 function entities, decisions and regions wholly inside its construct (for an
 `impl` or `trait`, every function in it); `branch_off` takes the outcomes of
-the decision it is on. an exclusion that takes nothing the coverage planner
+the decision it is on; `contract_off` takes the contract clauses the function
+owns directly, which keep running and keep their counts but leave the
+contract denominator. an exclusion that takes nothing the coverage planner
 planned (only declarations, for example) is `COV1021` in a coverage build.
 excluding code never changes the count of the code left ordinary: where an
 ordinary region's count depends on an excluded decision (the code after an
@@ -241,7 +243,7 @@ argument is at fault).
 <!-- BEGIN GENERATED: coverage attribute diagnostics (scripts/gen_coverage_attribute.py) -->
 | Code | Title | When |
 |---|---|---|
-| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to; an `ignore-next` directive with no code after it in its file, or whose next code is not an item, a statement, or an `if` or `match` expression; an `ignore-start` region with no code; in a coverage build, an exclusion that takes nothing the coverage planner planned, and `contract_off` until contract coverage exists (sv0cov CV-306) |
+| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to; an `ignore-next` directive with no code after it in its file, or whose next code is not an item, a statement, or an `if` or `match` expression; an `ignore-start` region with no code; in a coverage build, an exclusion that takes nothing the coverage planner planned |
 | `COV3201` | Invalid coverage exclusion | the content is not exactly `coverage(<mode>, reason = "<text>")`: no argument list, an `= literal` form, an unknown or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a reason that is not a string literal, is longer than 1,024 bytes, or holds a NUL, CR or LF (or an escape above `0x7e`); or a rejected namespace spelling; a comment directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another spacing or case, an unknown action, a reason not written `reason="..."`, unclosed or longer than 1,024 bytes, text after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file; an `ignore-start` region that does not begin and end between the items or statements of one block |
 | `COV3202` | Conflicting coverage exclusions | a comment directive and an `off` or `branch_off` attribute name the same construct |
 | `COV3203` | Redundant coverage exclusion | one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree of an enclosing `off` (or comment directive) whose effect already includes it; a directive inside an open `ignore-start` region, or between an `ignore-next` and its construct |
@@ -262,7 +264,5 @@ earlier code it reports an error instead of choosing an indentation. since
 CV-304 sv0c scans comment directives (`sv0c/lib/directives.sv0`) before
 lexing each source file. since CV-305 it checks sections 4 and 6 in every
 build and applies the effect in coverage builds (`sv0c/lib/exclusions.sv0`),
-with identical maps for the generated-C and VM backends. one part waits:
-`contract_off` is checked in every build, but contract coverage itself comes
-with sv0cov CV-306, so until then a `contract_off` attribute is refused in a
-`--coverage=map` or `instrument` build (`COV1021`) rather than ignored.
+with identical maps for the generated-C and VM backends. `contract_off` has
+its effect since CV-306, when contract coverage itself landed.

@@ -40,8 +40,7 @@ def registry() -> dict:
                      "`else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to "
                      "the construct it attaches to; an `ignore-next` directive with no code after it in its file, or whose next code is not "
                      "an item, a statement, or an `if` or `match` expression; an `ignore-start` region with no code; in a coverage build, "
-                     "an exclusion that takes nothing the coverage planner planned, and `contract_off` until contract coverage exists "
-                     "(sv0cov CV-306)"},
+                     "an exclusion that takes nothing the coverage planner planned"},
             {"code": "COV3201", "title": "Invalid coverage exclusion",
              "when": "the content is not exactly `coverage(<mode>, reason = \"<text>\")`: no argument list, an `= literal` form, an unknown "
                      "or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a "
@@ -102,7 +101,7 @@ def registry() -> dict:
                     "when compared without regard to ASCII case",
         },
         "schema": "sv0.coverage-attribute",
-        "version": "1.2",
+        "version": "1.3",
     }
 
 

@@ -183,5 +183,8 @@ build with the diagnostics of section 7, and gives the parser the token
 stream without the attributes it need not see. the mode-to-construct and
 redundancy checks of section 4 and the exclusion effect come with CV-305;
 until then a valid `coverage` attribute is refused in a `--coverage=map` or
-`instrument` build (`COV1021`) rather than ignored. formatting comes with
-CV-303 and comment directives with CV-304.
+`instrument` build (`COV1021`) rather than ignored. the workspace formatter
+(`scripts/fmt_sv0.py`) lays attributes out as section 5 says since CV-303,
+keeping every attachment and argument; where the construct shares a line with
+earlier code it reports an error instead of choosing an indentation. comment
+directives come with CV-304.

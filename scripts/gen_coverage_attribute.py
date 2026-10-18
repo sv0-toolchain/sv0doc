@@ -38,20 +38,25 @@ def registry() -> dict:
             {"code": "COV1021", "title": "Unsupported coverage attribute placement",
              "when": "the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, "
                      "`else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to "
-                     "the construct it attaches to; an `ignore-next` directive with no code after it in its file"},
+                     "the construct it attaches to; an `ignore-next` directive with no code after it in its file, or whose next code is not "
+                     "an item, a statement, or an `if` or `match` expression; an `ignore-start` region with no code; in a coverage build, "
+                     "an exclusion that takes nothing the coverage planner planned, and `contract_off` until contract coverage exists "
+                     "(sv0cov CV-306)"},
             {"code": "COV3201", "title": "Invalid coverage exclusion",
              "when": "the content is not exactly `coverage(<mode>, reason = \"<text>\")`: no argument list, an `= literal` form, an unknown "
                      "or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a "
-                     "reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling; a comment "
+                     "reason that is not a string literal, is longer than 1,024 bytes, or holds a NUL, CR or LF (or an escape above `0x7e`); "
+                     "or a rejected namespace spelling; a comment "
                      "directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another "
                      "spacing or case, an unknown action, a reason not written `reason=\"...\"`, unclosed or longer than 1,024 bytes, text "
-                     "after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file"},
+                     "after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file; an `ignore-start` region "
+                     "that does not begin and end between the items or statements of one block"},
             {"code": "COV3202", "title": "Conflicting coverage exclusions",
-             "when": "an attribute and a comment directive give the same construct different policy"},
+             "when": "a comment directive and an `off` or `branch_off` attribute name the same construct"},
             {"code": "COV3203", "title": "Redundant coverage exclusion",
              "when": "one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree "
-                     "of an enclosing `off` whose effect already includes it; a directive inside an open `ignore-start` region, or between "
-                     "an `ignore-next` and its construct"},
+                     "of an enclosing `off` (or comment directive) whose effect already includes it; a directive inside an open "
+                     "`ignore-start` region, or between an `ignore-next` and its construct"},
             {"code": "COV3207", "title": "Coverage exclusion has no reason",
              "when": "the `reason` argument (or a directive's `reason=`) is missing, or its string is empty"},
         ],
@@ -63,14 +68,19 @@ def registry() -> dict:
             "form": "// sv0cov: <ignore-next|ignore-start> reason=\"<text>\"",
             "nesting": "none: a directive inside an open region, or between an ignore-next and its construct, is redundant",
             "prefix": "// sv0cov:",
-            "reason": {"escapes": "string literal", "max_bytes": 1024, "min_bytes": 1},
+            "reason": {"escapes": "string literal", "forbidden": ["NUL", "CR", "LF"], "max_bytes": 1024,
+                       "max_escape_byte": 126, "min_bytes": 1},
+            "resolution": {"ignore-next": "the next item, statement, or if/match expression after attributes, use/module "
+                                          "declarations and items with no code",
+                           "region": "between the items or statements of one block"},
             "separator": "one or more spaces or tabs; only spaces or tabs after the last part",
             "unit": "one source file",
         },
         "form": {
             "arguments": ["mode", "reason"],
             "example": "#[coverage(off, reason = \"platform-specific failure path\")]",
-            "reason": {"literal": "string", "max_bytes": 1024, "min_bytes": 1},
+            "reason": {"forbidden": ["NUL", "CR", "LF"], "literal": "string", "max_bytes": 1024, "max_escape_byte": 126,
+                       "min_bytes": 1},
         },
         "modes": [
             {"attaches_to": "a `fn`, or an `impl` or `trait` with at least one function body, or any statement",
@@ -92,7 +102,7 @@ def registry() -> dict:
                     "when compared without regard to ASCII case",
         },
         "schema": "sv0.coverage-attribute",
-        "version": "1.1",
+        "version": "1.2",
     }
 
 

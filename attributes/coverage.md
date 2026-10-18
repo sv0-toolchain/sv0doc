@@ -78,13 +78,15 @@ exactly two arguments, in this order:
 
 1. one bare mode identifier from section 4;
 2. `reason = ` followed by one string literal whose value is 1 to 1,024 bytes
-   of UTF-8.
+   of UTF-8. the value (after its escapes) holds no NUL, carriage return or
+   line feed, and an escape in it stands for a byte no higher than `0x7e`:
+   the reason is carried byte for byte into coverage maps and reports.
 
 every other shape is an error: no argument list, the `= literal` attribute
 form, a missing, unknown, or differently cased mode, the reason before the
 mode, a duplicate or extra argument, a nested argument list, or a reason that
-is not a string literal or is too long (`COV3201`). a missing or empty reason
-is `COV3207`.
+is not a string literal, is too long, or breaks the rule above (`COV3201`). a
+missing or empty reason is `COV3207`.
 
 ## 4. modes
 
@@ -137,6 +139,17 @@ ordinary build. only the effect depends on the mode: with `--coverage=off`
 nothing is excluded or emitted; with `map` or `instrument` the excluded
 constructs stay in the coverage map as exclusion records (sv0cov SPEC 16.3)
 and leave only their denominators.
+
+the effect follows the plan. `off`, and every comment directive, takes the
+function entities, decisions and regions wholly inside its construct (for an
+`impl` or `trait`, every function in it); `branch_off` takes the outcomes of
+the decision it is on. an exclusion that takes nothing the coverage planner
+planned (only declarations, for example) is `COV1021` in a coverage build.
+excluding code never changes the count of the code left ordinary: where an
+ordinary region's count depends on an excluded decision (the code after an
+excluded `if` that returns, or the body of a `branch_off` decision), the
+compiler keeps counting that decision's outcomes as compiler support, outside
+every denominator.
 
 the parser and syntax tree keep every attribute in order with its span, the
 span of each argument, and the identity of the construct it attaches to. a
@@ -191,23 +204,33 @@ reason        = string literal, with the lexer's escapes, of 1 to 1,024 bytes ;
   several lines and escaped quotes), character literals, and block comments
   (which nest) is never a directive.
 - **`ignore-next`** applies to the next code after it in its file, skipping
-  blank lines and comments. with no code after it in the file it is
-  `COV1021`.
-- **`ignore-start` / `ignore-end`** bound a region in one source file. an
-  `ignore-end` without a start, or a start the file never closes, is
-  `COV3201`. a region in one file never continues into another, in a
-  project build too.
+  blank lines, comments, attributes, `use` and `module` declarations, and
+  items with no code (`struct`, `enum`, a `trait` without bodies, ...). that
+  code must begin an item, a statement, or an `if` or `match` expression,
+  which it then excludes whole, like `off`; anything else (an operand, a call)
+  has no coverage of its own yet and is `COV1021`, as is no code at all.
+- **`ignore-start` / `ignore-end`** bound a region in one source file that
+  excludes everything inside it, like `off`. an `ignore-end` without a start,
+  or a start the file never closes, is `COV3201`. a region in one file never
+  continues into another, in a project build too. both directives must stand
+  between the items or statements of one block (or of the file): a region
+  that would begin or end inside an expression, or in a different block than
+  it began, cuts a construct in two and is `COV3201`; a region with no code
+  is `COV1021`.
 - **no nesting.** a directive inside an open region, or between an
   `ignore-next` and its code, is already covered by the first one and is
   redundant (`COV3203`).
-- a missing or empty reason is `COV3207`.
+- **with attributes.** a directive and an `off` or `branch_off` attribute
+  on the same construct are `COV3202` (a `contract_off` attribute is
+  disjoint and allowed); a directive inside an `off` exclusion, or an
+  attribute inside a directive's construct or region, is redundant
+  (`COV3203`), except `contract_off`.
+- a missing or empty reason is `COV3207`; the reason follows section 3's rule
+  on its contents.
 
 directives are checked in every build, like attributes (section 5); only the
-exclusion effect depends on the coverage mode. which construct an
-`ignore-next` excludes (after attributes and non-executable declarations are
-skipped), how a region maps to regions and decisions, and conflicts with
-attributes (`COV3202`) are resolved with the exclusion effect (sv0cov
-CV-305).
+exclusion effect depends on the coverage mode. a directive's exclusion record
+has mode `off` and origin `comment`.
 
 ## 7. diagnostics
 
@@ -218,10 +241,10 @@ argument is at fault).
 <!-- BEGIN GENERATED: coverage attribute diagnostics (scripts/gen_coverage_attribute.py) -->
 | Code | Title | When |
 |---|---|---|
-| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to; an `ignore-next` directive with no code after it in its file |
-| `COV3201` | Invalid coverage exclusion | the content is not exactly `coverage(<mode>, reason = "<text>")`: no argument list, an `= literal` form, an unknown or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling; a comment directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another spacing or case, an unknown action, a reason not written `reason="..."`, unclosed or longer than 1,024 bytes, text after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file |
-| `COV3202` | Conflicting coverage exclusions | an attribute and a comment directive give the same construct different policy |
-| `COV3203` | Redundant coverage exclusion | one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree of an enclosing `off` whose effect already includes it; a directive inside an open `ignore-start` region, or between an `ignore-next` and its construct |
+| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to; an `ignore-next` directive with no code after it in its file, or whose next code is not an item, a statement, or an `if` or `match` expression; an `ignore-start` region with no code; in a coverage build, an exclusion that takes nothing the coverage planner planned, and `contract_off` until contract coverage exists (sv0cov CV-306) |
+| `COV3201` | Invalid coverage exclusion | the content is not exactly `coverage(<mode>, reason = "<text>")`: no argument list, an `= literal` form, an unknown or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a reason that is not a string literal, is longer than 1,024 bytes, or holds a NUL, CR or LF (or an escape above `0x7e`); or a rejected namespace spelling; a comment directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another spacing or case, an unknown action, a reason not written `reason="..."`, unclosed or longer than 1,024 bytes, text after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file; an `ignore-start` region that does not begin and end between the items or statements of one block |
+| `COV3202` | Conflicting coverage exclusions | a comment directive and an `off` or `branch_off` attribute name the same construct |
+| `COV3203` | Redundant coverage exclusion | one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree of an enclosing `off` (or comment directive) whose effect already includes it; a directive inside an open `ignore-start` region, or between an `ignore-next` and its construct |
 | `COV3207` | Coverage exclusion has no reason | the `reason` argument (or a directive's `reason=`) is missing, or its string is empty |
 <!-- END GENERATED: coverage attribute diagnostics -->
 
@@ -232,13 +255,14 @@ validates `coverage` attributes since sv0cov CV-302: a front-end pass
 (`sv0c/lib/attributes.sv0`) records every attribute with its span, argument
 spans, and the construct it attaches to, checks sections 1 to 3 in every
 build with the diagnostics of section 7, and gives the parser the token
-stream without the attributes it need not see. the mode-to-construct and
-redundancy checks of section 4 and the exclusion effect come with CV-305;
-until then a valid `coverage` attribute is refused in a `--coverage=map` or
-`instrument` build (`COV1021`) rather than ignored. the workspace formatter
+stream without the attributes it need not see. the workspace formatter
 (`scripts/fmt_sv0.py`) lays attributes out as section 5 says since CV-303,
 keeping every attachment and argument; where the construct shares a line with
 earlier code it reports an error instead of choosing an indentation. since
-CV-304 sv0c also scans comment directives (`sv0c/lib/directives.sv0`) before
-lexing each source file and checks section 6 in every build; a valid
-directive is refused under `--coverage` (`COV1021`) until CV-305.
+CV-304 sv0c scans comment directives (`sv0c/lib/directives.sv0`) before
+lexing each source file. since CV-305 it checks sections 4 and 6 in every
+build and applies the effect in coverage builds (`sv0c/lib/exclusions.sv0`),
+with identical maps for the generated-C and VM backends. one part waits:
+`contract_off` is checked in every build, but contract coverage itself comes
+with sv0cov CV-306, so until then a `contract_off` attribute is refused in a
+`--coverage=map` or `instrument` build (`COV1021`) rather than ignored.

@@ -7,7 +7,7 @@ coverage tool (sv0cov) consumes the result. machine-readable form:
 [`coverage-attribute.json`](coverage-attribute.json), generated with the
 tables below by `scripts/gen_coverage_attribute.py`.
 
-sources: sv0cov SPEC 13.4, 19.2, 19.4 (COV-EXC-007, -008, -012, -013, -014,
+sources: sv0cov SPEC 13.4, 19.2, 19.3, 19.4 (COV-EXC-002, -007, -008, -012, -013, -014,
 -016, -019..-024); grammar: [`grammar/sv0.ebnf`](../grammar/sv0.ebnf) section 12.
 
 ```sv0
@@ -152,10 +152,62 @@ instead of ignoring it.
 ## 6. comment directives
 
 where an attribute cannot go (inside an expression), coverage uses comment
-directives, `// sv0cov: ignore-next reason="..."` and an `ignore-start` /
-`ignore-end` pair. a comment beginning `// sv0cov:` is reserved for them.
-their grammar and scan are sv0cov SPEC 19.3; an attribute and a directive that
-give the same construct different policy are `COV3202`.
+directives. they are line comments that the compiler reads before lexing
+(sv0cov SPEC 19.3):
+
+```sv0
+fn pick(a: i32, b: i32) -> i32 {
+    // sv0cov: ignore-next reason="defensive host error path"
+    let fallback: i32 = if a < 0 { b } else { a };
+
+    // sv0cov: ignore-start reason="generated protocol table"
+    let t0: i32 = 1;
+    let t1: i32 = 2;
+    // sv0cov: ignore-end
+    return fallback + t0 + t1;
+}
+```
+
+grammar, exact and ASCII case-sensitive:
+
+```text
+directive     = "// sv0cov:" ws action ws "reason=" reason trailing ;
+action        = "ignore-next" | "ignore-start" ;
+end-directive = "// sv0cov:" ws "ignore-end" trailing ;
+ws            = ( " " | "\t" ) , { " " | "\t" } ;
+trailing      = { " " | "\t" } ;    (* then the end of the line *)
+reason        = string literal, with the lexer's escapes, of 1 to 1,024 bytes ;
+```
+
+- **reserved prefix.** a comment whose text, after its opener (`//`, `///`,
+  `/*`) and any spaces or tabs, starts with `sv0cov:` in any case is a
+  directive attempt, and must be spelled exactly as above: `//sv0cov:`,
+  `// SV0COV:`, `/// sv0cov:` and `/* sv0cov: ... */` are errors
+  (`COV3201`), never ordinary comments. prose such as `// sv0cov, the
+  coverage tool` is not an attempt.
+- **standalone.** a directive is a line comment alone on its line; one after
+  code or a block comment on the same line is `COV3201`.
+- **source-aware scan.** text inside string literals (including strings over
+  several lines and escaped quotes), character literals, and block comments
+  (which nest) is never a directive.
+- **`ignore-next`** applies to the next code after it in its file, skipping
+  blank lines and comments. with no code after it in the file it is
+  `COV1021`.
+- **`ignore-start` / `ignore-end`** bound a region in one source file. an
+  `ignore-end` without a start, or a start the file never closes, is
+  `COV3201`. a region in one file never continues into another, in a
+  project build too.
+- **no nesting.** a directive inside an open region, or between an
+  `ignore-next` and its code, is already covered by the first one and is
+  redundant (`COV3203`).
+- a missing or empty reason is `COV3207`.
+
+directives are checked in every build, like attributes (section 5); only the
+exclusion effect depends on the coverage mode. which construct an
+`ignore-next` excludes (after attributes and non-executable declarations are
+skipped), how a region maps to regions and decisions, and conflicts with
+attributes (`COV3202`) are resolved with the exclusion effect (sv0cov
+CV-305).
 
 ## 7. diagnostics
 
@@ -166,11 +218,11 @@ argument is at fault).
 <!-- BEGIN GENERATED: coverage attribute diagnostics (scripts/gen_coverage_attribute.py) -->
 | Code | Title | When |
 |---|---|---|
-| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to |
-| `COV3201` | Invalid coverage exclusion | the content is not exactly `coverage(<mode>, reason = "<text>")`: no argument list, an `= literal` form, an unknown or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling |
+| `COV1021` | Unsupported coverage attribute placement | the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, `else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to the construct it attaches to; an `ignore-next` directive with no code after it in its file |
+| `COV3201` | Invalid coverage exclusion | the content is not exactly `coverage(<mode>, reason = "<text>")`: no argument list, an `= literal` form, an unknown or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling; a comment directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another spacing or case, an unknown action, a reason not written `reason="..."`, unclosed or longer than 1,024 bytes, text after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file |
 | `COV3202` | Conflicting coverage exclusions | an attribute and a comment directive give the same construct different policy |
-| `COV3203` | Redundant coverage exclusion | one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree of an enclosing `off` whose effect already includes it |
-| `COV3207` | Coverage exclusion has no reason | the `reason` argument is missing, or its string is empty |
+| `COV3203` | Redundant coverage exclusion | one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree of an enclosing `off` whose effect already includes it; a directive inside an open `ignore-start` region, or between an `ignore-next` and its construct |
+| `COV3207` | Coverage exclusion has no reason | the `reason` argument (or a directive's `reason=`) is missing, or its string is empty |
 <!-- END GENERATED: coverage attribute diagnostics -->
 
 ## 8. implementation status
@@ -186,5 +238,7 @@ until then a valid `coverage` attribute is refused in a `--coverage=map` or
 `instrument` build (`COV1021`) rather than ignored. the workspace formatter
 (`scripts/fmt_sv0.py`) lays attributes out as section 5 says since CV-303,
 keeping every attachment and argument; where the construct shares a line with
-earlier code it reports an error instead of choosing an indentation. comment
-directives come with CV-304.
+earlier code it reports an error instead of choosing an indentation. since
+CV-304 sv0c also scans comment directives (`sv0c/lib/directives.sv0`) before
+lexing each source file and checks section 6 in every build; a valid
+directive is refused under `--coverage` (`COV1021`) until CV-305.

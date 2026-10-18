@@ -116,6 +116,8 @@ bool_literal    = "true" | "false" ;
 
 line_comment    = "//" , { ? any character except newline ? } ;
 doc_comment     = "///" , { ? any character except newline ? } ;
+(* a comment whose text starts with `sv0cov:` is a coverage directive *)
+(* (attributes/coverage.md section 6), checked before lexing.         *)
 
 (* --- whitespace (skipped by lexer) --- *)
 

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""The `coverage` attribute registry (sv0cov CV-301; SPEC 13.4, 19.2, 19.4;
-COV-EXC-007, COV-EXC-008, COV-EXC-012, COV-EXC-019).
+"""The `coverage` attribute and comment-directive registry (sv0cov CV-301,
+CV-304; SPEC 13.4, 19.2, 19.3, 19.4; COV-EXC-002, COV-EXC-007, COV-EXC-008,
+COV-EXC-012, COV-EXC-019).
 
 ``attributes/coverage-attribute.json`` is the single machine-readable
 statement of the reserved namespace, the exact argument form, the three
-modes and where each may attach, the rejected namespace spellings, and the
-diagnostic for each rejection. This script writes it and renders the two
+modes and where each may attach, the rejected namespace spellings, the
+comment-directive grammar, and the diagnostic for each rejection. This script writes it and renders the two
 tables of ``attributes/coverage.md`` from it (between the GENERATED
 markers), or checks that both are current. sv0c's attribute validation
-(CV-302, CV-305) is tested against this registry.
+(CV-302, CV-305) and directive scan (CV-304) are tested against this
+registry.
 
     python3 scripts/gen_coverage_attribute.py          # check
     python3 scripts/gen_coverage_attribute.py --write
@@ -36,19 +38,35 @@ def registry() -> dict:
             {"code": "COV1021", "title": "Unsupported coverage attribute placement",
              "when": "the attribute is not followed by an item or statement (an expression, a match arm, a field, a variant, a parameter, "
                      "`else`, a lone `;`, a closing `}`, a `use` or `module` declaration, the end of the file), or its mode cannot apply to "
-                     "the construct it attaches to"},
+                     "the construct it attaches to; an `ignore-next` directive with no code after it in its file"},
             {"code": "COV3201", "title": "Invalid coverage exclusion",
              "when": "the content is not exactly `coverage(<mode>, reason = \"<text>\")`: no argument list, an `= literal` form, an unknown "
                      "or differently cased mode, the mode not first, a missing mode, a duplicate or extra argument, a nested argument list, a "
-                     "reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling"},
+                     "reason that is not a string literal or is longer than 1,024 bytes; or a rejected namespace spelling; a comment "
+                     "directive that is not spelled exactly as section 6 says (not alone on its line, a block or doc comment, another "
+                     "spacing or case, an unknown action, a reason not written `reason=\"...\"`, unclosed or longer than 1,024 bytes, text "
+                     "after it); an `ignore-end` without a start, or an `ignore-start` never closed in its file"},
             {"code": "COV3202", "title": "Conflicting coverage exclusions",
              "when": "an attribute and a comment directive give the same construct different policy"},
             {"code": "COV3203", "title": "Redundant coverage exclusion",
              "when": "one construct has the same mode twice, or `off` together with `branch_off`; or an exclusion lies inside the subtree "
-                     "of an enclosing `off` whose effect already includes it"},
+                     "of an enclosing `off` whose effect already includes it; a directive inside an open `ignore-start` region, or between "
+                     "an `ignore-next` and its construct"},
             {"code": "COV3207", "title": "Coverage exclusion has no reason",
-             "when": "the `reason` argument is missing, or its string is empty"},
+             "when": "the `reason` argument (or a directive's `reason=`) is missing, or its string is empty"},
         ],
+        "directives": {
+            "actions": ["ignore-next", "ignore-start", "ignore-end"],
+            "attempt": "a line or block comment whose text, after the comment opener and spaces or tabs, starts with `sv0cov:` "
+                       "compared without regard to ASCII case",
+            "end_form": "// sv0cov: ignore-end",
+            "form": "// sv0cov: <ignore-next|ignore-start> reason=\"<text>\"",
+            "nesting": "none: a directive inside an open region, or between an ignore-next and its construct, is redundant",
+            "prefix": "// sv0cov:",
+            "reason": {"escapes": "string literal", "max_bytes": 1024, "min_bytes": 1},
+            "separator": "one or more spaces or tabs; only spaces or tabs after the last part",
+            "unit": "one source file",
+        },
         "form": {
             "arguments": ["mode", "reason"],
             "example": "#[coverage(off, reason = \"platform-specific failure path\")]",
@@ -74,7 +92,7 @@ def registry() -> dict:
                     "when compared without regard to ASCII case",
         },
         "schema": "sv0.coverage-attribute",
-        "version": "1.0",
+        "version": "1.1",
     }
 
 

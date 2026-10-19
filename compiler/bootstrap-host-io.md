@@ -31,4 +31,4 @@ Any change that alters names, arities, **`read_dir`** encoding, or panic vs **`R
 ## related
 
 - **`compiler/bootstrap-diagnostics.md`** — compile-time error carrier; defers I/O names until this document.  
-- **`bytecode/`** — opcode **`117`** (`CALL_BUILTIN`) carries a **`u32`** builtin id; ids **15–17** are reserved for **`read_file` / `write_file` / `read_dir`** in the **`sv0vm`** interpreter shipped with this toolchain (see interpreter sources for the authoritative dispatch table).
+- **`bytecode/`** — opcode **`117`** (`CALL_BUILTIN`) carries a **`u32`** builtin id; ids **15–17** are reserved for **`read_file` / `write_file` / `read_dir`**, and id **19** for **`getenv`** (the host environment variable, `""` when unset; since sv0cov CV-306), in the **`sv0vm`** interpreter shipped with this toolchain (see interpreter sources for the authoritative dispatch table).
